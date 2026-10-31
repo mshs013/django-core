@@ -1,0 +1,11 @@
+{% comment %}"Companies" control of a report run / export (core.reports.scope.scope_ui). Shown only when the user's profile has "Report shows
+all companies" ticked; the server re-validates the choice on every run. Expects ``scope``; optional ``scope_class``.{% endcomment %}
+{% if scope.enabled %}<div class="core-company-scope {{ scope_class }}" x-data="{ mode: '{{ scope.mode|escapejs }}' }">
+  <label class="form-label small mb-1" for="core-scope-mode">Companies</label>
+  <select id="core-scope-mode" name="company_scope" class="form-select form-select-sm" x-model="mode" aria-label="Companies">
+    {% for value, label in scope.modes %}<option value="{{ value }}"{% if value == scope.mode %} selected{% endif %}>{{ label }}</option>{% endfor %}
+  </select>
+  <select name="companies" multiple size="4" class="form-select form-select-sm mt-1" x-show="mode === 'chosen'"{% if scope.mode != 'chosen' %} x-cloak{% endif %} aria-label="Chosen companies">
+    {% for c in scope.companies %}<option value="{{ c.pk }}"{% if c.pk in scope.chosen %} selected{% endif %}>{{ c.abbreviation|default:c.name }} · {{ c.name }}</option>{% endfor %}
+  </select>
+</div>{% endif %}

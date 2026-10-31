@@ -1,0 +1,13 @@
+{% load core_tags %}{# Modal partial: create / edit. Posts back into the modal (hx-post); 204 + HX-Trigger closes it, 400 re-renders it with field errors. #}
+<div data-modal-size="{% if nodes or form_tabs.tabs|length > 1 %}xl{% else %}lg{% endif %}"></div>
+<form method="post" action="{{ action }}" hx-post="{{ action }}" hx-target="#core-modal-content" hx-swap="innerHTML" {% if multipart %}hx-encoding="multipart/form-data" enctype="multipart/form-data"{% endif %} novalidate>
+  {% csrf_token %}
+  <div class="modal-header"><h5 class="modal-title">{% if creating %}New {{ cfg.label|lower }}{% else %}Edit {{ obj }}{% endif %}</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+  <div class="modal-body">
+    {% if form.errors or nodes|tree_has_errors %}<div class="alert alert-danger" role="alert">Please correct the errors below.</div>{% endif %}
+    {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+    {% include "core/crud/_form_body.html" %}
+  </div>
+  <div class="modal-footer"><button type="button" class="btn me-auto" data-bs-dismiss="modal">Cancel</button><button class="btn btn-primary" type="submit">Save</button></div>
+</form>

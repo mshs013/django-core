@@ -1,0 +1,17 @@
+{% extends "core/base.html" %}{% block title %}Backups{% endblock %}{% block heading %}Backups{% endblock %}
+{% block content %}
+{% if can_create %}<form method="post" action="{% url 'core:backup_create' %}" class="card mb-3"><div class="card-body d-flex gap-2 align-items-end">{% csrf_token %}
+  <div><label class="form-label">Mode</label><select name="mode" class="form-select">{% for v, l in modes %}<option value="{{ v }}">{{ l }}</option>{% endfor %}</select></div>
+  <button class="btn btn-primary">Create database backup</button></div></form>
+<form method="post" action="{% url 'core:backup_create' %}" class="card mb-3"><div class="card-body d-flex flex-wrap gap-2 align-items-end">{% csrf_token %}<input type="hidden" name="kind" value="file">
+  <div><label class="form-label">Files</label><select name="source" class="form-select">{% for s in overview.sources %}<option value="{{ s.index }}"{% if not s.exists %} disabled{% endif %}>{{ s.label }} ({{ s.path }}){% if not s.exists %} - missing{% endif %}</option>{% empty %}<option value="">No file sources configured</option>{% endfor %}</select></div>
+  <div class="flex-grow-1"><label class="form-label">Extra exclusions <span class="text-secondary small">(relative paths, space separated)</span></label><input name="exclusions" class="form-control" placeholder="logs tmp/cache"></div>
+  <label class="form-check mb-2"><input class="form-check-input" type="checkbox" name="include_hidden" value="1" checked><span class="form-check-label">Include hidden files</span></label>
+  <button class="btn btn-primary">Create file backup</button></div></form>{% endif %}
+<div class="card"><div class="table-responsive"><table class="table card-table"><thead><tr><th>Created</th><th>Mode</th><th>Status</th><th>Size</th><th>Validation</th><th></th></tr></thead><tbody>
+{% for r in records %}<tr><td>{{ r.created_at|date:"DATETIME_FORMAT" }}</td><td>{{ r.get_mode_display }}</td><td>{{ r.get_status_display }}{% if r.error %}<div class="small text-danger">{{ r.error|truncatechars:120 }}</div>{% endif %}</td><td>{{ r.file_size|filesizeformat }}</td><td>{{ r.get_validation_status_display|default:"—" }}</td>
+<td class="text-end">{% if r.status == "SUCCESS" and not r.file_deleted %}
+  {% if can_download %}<a class="btn btn-sm" href="{% url 'core:backup_download' r.pk %}">Download</a>{% endif %}
+  {% if can_validate %}<form class="d-inline" method="post" action="{% url 'core:backup_action' r.pk 'validate' %}">{% csrf_token %}<button class="btn btn-sm">Validate</button></form>{% endif %}
+  {% if can_restore %}<a class="btn btn-sm btn-outline-danger" href="{% url 'core:backup_restore' r.pk %}">Restore…</a>{% endif %}{% endif %}</td></tr>
+{% empty %}<tr><td colspan="6" class="text-center text-secondary py-4">No backups yet.</td></tr>{% endfor %}</tbody></table></div></div>{% endblock %}

@@ -1,0 +1,10 @@
+{% load core_tags %}<div data-modal-size="lg"></div>
+<form method="post" action="{{ action }}" hx-post="{{ action }}" hx-target="#core-modal-content" hx-swap="innerHTML" novalidate>{% csrf_token %}
+  <div class="modal-header"><h5 class="modal-title">{% if obj %}Edit menu item{% else %}New menu item{% endif %}</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+  <div class="modal-body">
+    {% if form.errors %}<div class="alert alert-danger" role="alert">Please correct the errors below.</div>{% endif %}
+    {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+    <div class="row">{% for field in form %}<div class="col-md-6">{% include "core/_field.html" %}</div>{% endfor %}</div>
+  </div>
+  <div class="modal-footer"><button type="button" class="btn me-auto" data-bs-dismiss="modal">Cancel</button><button class="btn btn-primary" type="submit">Save</button></div>
+</form>

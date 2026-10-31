@@ -1,0 +1,7 @@
+{# Approval buttons for one record (submit / resubmit / withdraw / view). ``size`` = "sm" for the compact modal-header version. #}
+{% with b=size|default:"" %}
+  {% if panel.can_submit %}<form method="post" action="{% url 'core:approval_submit' cfg.slug obj.pk 'submit' %}" class="d-inline">{% csrf_token %}{% if panel_next %}<input type="hidden" name="next" value="{{ panel_next }}">{% endif %}<button class="btn btn-primary{% if b %} btn-{{ b }}{% endif %}">Submit for approval</button></form>{% endif %}
+  {% if panel.resubmit and panel.can_submit %}<form method="post" action="{% url 'core:approval_submit' cfg.slug obj.pk 'resubmit' %}" class="d-inline">{% csrf_token %}{% if panel_next %}<input type="hidden" name="next" value="{{ panel_next }}">{% endif %}<button class="btn btn-primary{% if b %} btn-{{ b }}{% endif %}">Resubmit</button></form>{% endif %}
+  {% if panel.can_cancel %}<form method="post" action="{% url 'core:approval_submit' cfg.slug obj.pk 'cancel' %}" class="d-inline">{% csrf_token %}{% if panel_next %}<input type="hidden" name="next" value="{{ panel_next }}">{% endif %}<button class="btn btn-outline-danger{% if b %} btn-{{ b }}{% endif %}">{% if panel.status == "pending" and not panel.cancelable_record %}Withdraw request{% else %}Cancel{% endif %}</button></form>{% endif %}
+  {% if panel.request %}<a class="btn{% if b %} btn-{{ b }}{% endif %}" href="{% url 'core:approval_detail' panel.request.pk %}">View request</a>{% endif %}
+{% endwith %}

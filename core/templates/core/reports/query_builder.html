@@ -1,0 +1,221 @@
+{% extends "core/base.html" %}{% load static core_tags %}
+{% block title %}{% if saved %}{{ saved.name }}{% else %}Query · {{ entry.label }}{% endif %}{% endblock %}
+{% block heading %}{% if saved %}{{ saved.name }} <span class="text-secondary fs-4">· {{ entry.label }}</span>{% else %}New query · {{ entry.label }}{% endif %}{% endblock %}
+{% block actions %}{% if back_url %}<a class="btn" href="{{ back_url }}">Back</a>{% endif %}<a class="btn" href="{% url 'core:query_start' %}">Query builder</a><a class="btn" href="{% url 'core:report_list' %}">Reports</a>{% endblock %}
+{% block content %}
+<template id="qb-field-options"><option value="">— choose a field —</option>{% for group, items in field_groups.items %}<optgroup label="{{ group }}">{% for f in items %}<option value="{{ f.p }}" data-j="{{ f.j }}">{{ f.l }}</option>{% endfor %}</optgroup>{% endfor %}</template>
+<form id="query-form" class="qb-layout" method="post" action="{{ request.get_full_path }}" x-data="queryBuilder"
+      data-fields="{{ fields|json_attr }}" data-options="{{ options|json_attr }}" data-definition="{{ definition|json_attr }}">
+  {% csrf_token %}
+  <input type="hidden" name="definition" :value="json()">
+
+  {# ------------------------------------------------------------------ main: results + chart #}
+  <div class="qb-main">
+    <div class="card">
+      <div class="card-header flex-wrap gap-2 py-2">
+        <div class="flex-fill" style="min-width:0">
+          <h3 class="card-title mb-0">Results</h3>
+          <div class="text-secondary small text-truncate" x-text="summary()"></div>
+        </div>
+        <button type="button" class="btn btn-primary" hx-post="{{ request.get_full_path }}" hx-target="#query-preview" hx-include="#query-form" hx-vals='{"action": "preview"}'><i class="ti ti-player-play me-1"></i>Run</button>
+        <div class="d-flex gap-1"><select name="format" class="form-select w-auto" aria-label="Export format">{% for f in formats %}<option>{{ f }}</option>{% endfor %}</select>
+          <button class="btn" name="action" value="export"><i class="ti ti-download me-1"></i>Export</button></div>
+        {% include "core/reports/_company_scope.html" with scope_class="w-100" %}
+      </div>
+      <div class="card-body" id="query-preview">{% include "core/reports/_query_preview.html" %}</div>
+    </div>
+  </div>
+
+  {# ------------------------------------------------------------------ right sidebar: section pane + icon rail #}
+  <aside class="qb-side card" aria-label="Query editor">
+    <div class="qb-pane" x-show="panel">
+      <div class="qb-pane-head">
+        <span class="fw-bold" x-text="titles[tab]"></span>
+        <button type="button" class="btn btn-sm btn-ghost-secondary px-1 ms-auto" title="Hide the editor" @click="panel = false"><i class="ti ti-layout-sidebar-right-collapse"></i></button>
+      </div>
+      <div class="qb-pane-body">
+      {# ---- Joins: the related tables this query reads; their fields then appear in the pickers #}
+      <div x-show="tab === 'joins'" x-cloak>
+        <div class="small text-secondary mb-2">Fields come from <b>{{ entry.label }}</b> and the tables joined here.
+          <b>LEFT</b> keeps every row even without a match; <b>INNER</b> keeps only rows that have one.</div>
+        <template x-for="(j, i) in d.joins" :key="j._k">
+          <div class="qb-item d-flex gap-1 align-items-center">
+            <select class="form-select form-select-sm" x-model="j.path" aria-label="Table">
+              <option value="">— choose a table —</option>
+              <template x-for="t in O.tables" :key="t.p"><option :value="t.p" x-text="t.l + (t.m ? ' (many)' : '')" :selected="j.path === t.p"></option></template>
+            </select>
+            <select class="form-select form-select-sm w-auto" x-model="j.type" aria-label="Join type"><option value="left">LEFT</option><option value="inner">INNER</option></select>
+            <button type="button" class="btn btn-sm btn-ghost-danger px-1" title="Remove" @click="d.joins.splice(i, 1)"><i class="ti ti-x"></i></button>
+          </div>
+        </template>
+        <div class="text-secondary small py-1" x-show="!d.joins.length">No joins: only {{ entry.label }} fields are offered.</div>
+        <button type="button" class="btn btn-sm mt-2" @click="d.joins.push({_k: key(), path: '', type: 'left'})"><i class="ti ti-plus me-1"></i>Join table</button>
+        <div class="small text-secondary mt-2" x-show="unjoined().length">Used but not joined: <span x-text="unjoined().join(', ')"></span>
+          <button type="button" class="btn btn-sm btn-link p-0 ms-1" @click="joinUsed()">join them</button></div>
+      </div>
+
+      {# ---- Columns: one entry per column (field on the first line; function, aggregate and name on the second) #}
+      <div x-show="tab === 'columns'">
+        <template x-for="(c, i) in d.columns" :key="c._k">
+          <div class="qb-item">
+            <div class="d-flex gap-1 align-items-center">
+              <span class="text-nowrap">
+                <button type="button" class="btn btn-sm btn-ghost-secondary px-1" title="Move up" @click="move(d.columns, i, -1)"><i class="ti ti-arrow-up"></i></button><button type="button" class="btn btn-sm btn-ghost-secondary px-1" title="Move down" @click="move(d.columns, i, 1)"><i class="ti ti-arrow-down"></i></button></span>
+              <span class="flex-fill" style="min-width:0">
+                <template x-if="c.type === 'field'"><select class="form-select form-select-sm" aria-label="Field" x-init="fillFields($el)" x-model="c.path" @change="c.fn = ''; c.arg = ''"></select></template>
+                <template x-if="c.type === 'count'"><span class="form-control form-control-sm bg-transparent text-secondary">Count of rows</span></template>
+                <template x-if="c.type === 'case'"><button type="button" class="form-control form-control-sm text-start text-truncate" @click="toggle(c)" x-text="caseText(c)"></button></template>
+              </span>
+              <span class="text-nowrap">
+                <button type="button" class="btn btn-sm btn-ghost-secondary px-1 position-relative" title="More: heading, only where…, CASE" @click="toggle(c)"><i class="ti ti-adjustments-horizontal"></i><span class="qb-dot" x-show="detailSet(c)"></span></button><button type="button" class="btn btn-sm btn-ghost-danger px-1" title="Remove" @click="d.columns.splice(i, 1)"><i class="ti ti-x"></i></button></span>
+            </div>
+            <div class="qb-sub d-flex gap-1 mt-1">
+              <span class="d-flex gap-1 flex-fill" style="min-width:0">
+                <select class="form-select form-select-sm" aria-label="Function" title="Function" x-model="c.fn" :disabled="c.type !== 'field' || !Object.keys(fnsFor(kindOf(c.path))).length"><option value="">function —</option>
+                  <template x-for="(f, k) in fnsFor(kindOf(c.path))" :key="k"><option :value="k" x-text="f.label" :selected="c.fn === k"></option></template></select>
+                <input class="form-control form-control-sm qb-arg" x-show="c.fn && O.functions[c.fn] && O.functions[c.fn].arg" x-model="c.arg" :placeholder="c.fn === 'round' ? '2' : ','" aria-label="Function argument">
+              </span>
+              <select class="form-select form-select-sm qb-agg" aria-label="Aggregate" title="Aggregate" x-model="c.agg" :disabled="c.type === 'count'"><option value="">aggregate —</option>
+                <template x-for="(label, k) in O.aggregates" :key="k"><option :value="k" x-text="label" :selected="c.agg === k"></option></template></select>
+              <input class="form-control form-control-sm qb-name" x-model="c.alias" :placeholder="aliases()[i]" aria-label="Column name" title="Column name">
+            </div>
+            <div class="qb-detail" x-show="open[c._k]" x-cloak>
+              <div class="d-flex flex-wrap gap-2 align-items-center mb-1">
+                <label class="small text-secondary mb-0">Heading</label>
+                <input class="form-control form-control-sm flex-fill w-auto" x-model="c.label" placeholder="(automatic)" aria-label="Column heading">
+                <label class="form-check mb-0" x-show="c.agg && c.type !== 'case'"><input type="checkbox" class="form-check-input" x-model="c.useWhere" @change="if (c.useWhere && !c.where) c.where = newLeaf()"><span class="form-check-label small">only where…</span></label>
+              </div>
+              <template x-if="c.type === 'case'"><div class="d-flex flex-wrap gap-1 align-items-center mb-1">
+                <span class="small text-secondary">CASE WHEN</span>{% include "core/reports/_query_leaf.html" with v="c.case.when" %}
+                <span class="small text-secondary">THEN</span><input class="form-control form-control-sm qb-arg" x-model="c.case.then" aria-label="Then value">
+                <span class="small text-secondary">ELSE</span><input class="form-control form-control-sm qb-arg" x-model="c.case.else" aria-label="Else value">
+              </div></template>
+              <template x-if="c.agg && c.useWhere && c.where"><div><span class="small text-secondary">only where</span>{% include "core/reports/_query_leaf.html" with v="c.where" %}</div></template>
+            </div>
+          </div>
+        </template>
+        <div class="d-flex flex-wrap gap-1 mt-2">
+          <button type="button" class="btn btn-sm" @click="addColumn('field')"><i class="ti ti-plus me-1"></i>Field</button>
+          <button type="button" class="btn btn-sm" @click="addColumn('count')"><i class="ti ti-plus me-1"></i>Count rows</button>
+          <button type="button" class="btn btn-sm" @click="addColumn('case')"><i class="ti ti-plus me-1"></i>CASE value</button>
+        </div>
+        <div class="small text-secondary mt-2" x-show="grouped()">Grouped: columns without an aggregate are the GROUP BY.</div>
+      </div>
+
+      {# ---- Filters #}
+      <div x-show="tab === 'filters'" x-cloak>
+        <div class="d-flex align-items-center gap-1 mb-2 small"><span class="text-secondary">Match</span>
+          <select class="form-select form-select-sm w-auto" x-model="d.filters.op" aria-label="Combine filters"><option value="AND">all (AND)</option><option value="OR">any (OR)</option></select>
+          <span class="text-secondary">of these conditions</span></div>
+        <template x-for="(it, i) in d.filters.items" :key="it._k">
+          <div>
+            <template x-if="!it.items"><div class="qb-item d-flex gap-1 align-items-start">{% include "core/reports/_query_leaf.html" with v="it" %}
+              <button type="button" class="btn btn-sm btn-ghost-danger px-1" title="Remove" @click="d.filters.items.splice(i, 1)"><i class="ti ti-x"></i></button></div></template>
+            <template x-if="it.items"><div class="qb-group">
+              <div class="d-flex gap-1 align-items-center mb-1 small"><span class="text-secondary">( match</span>
+                <select class="form-select form-select-sm w-auto" x-model="it.op"><option value="OR">any (OR)</option><option value="AND">all (AND)</option></select>
+                <button type="button" class="btn btn-sm btn-ghost-secondary" @click="it.items.push(newLeaf())"><i class="ti ti-plus me-1"></i>Condition</button>
+                <button type="button" class="btn btn-sm btn-ghost-danger px-1 ms-auto" title="Remove group" @click="d.filters.items.splice(i, 1)"><i class="ti ti-x"></i></button></div>
+              <template x-for="(sub, j) in it.items" :key="sub._k"><div class="qb-item d-flex gap-1 align-items-start">{% include "core/reports/_query_leaf.html" with v="sub" %}
+                <button type="button" class="btn btn-sm btn-ghost-danger px-1" title="Remove" @click="it.items.splice(j, 1)"><i class="ti ti-x"></i></button></div></template>
+              <span class="small text-secondary">)</span>
+            </div></template>
+          </div>
+        </template>
+        <div class="text-secondary small py-1" x-show="!d.filters.items.length">No filters: every row of the table is used.</div>
+        <div class="d-flex flex-wrap gap-1 mt-2">
+          <button type="button" class="btn btn-sm" @click="d.filters.items.push(newLeaf())"><i class="ti ti-plus me-1"></i>Condition</button>
+          <button type="button" class="btn btn-sm" @click="d.filters.items.push({_k: key(), op: 'OR', items: [newLeaf()]})"><i class="ti ti-plus me-1"></i>Group ( … )</button>
+        </div>
+      </div>
+
+      {# ---- Group & HAVING #}
+      <div x-show="tab === 'group'" x-cloak>
+        <div class="small mb-2"><span class="text-secondary">Grouped by:</span> <span x-text="groupKeys().join(', ') || '(all rows: one result row)'"></span>
+          <div class="text-secondary">Change it under Columns: columns without an aggregate are grouped.</div></div>
+        <div class="small text-secondary mb-1">Keep only result rows where (HAVING):</div>
+        <template x-for="(h, i) in d.having" :key="h._k">
+          <div class="qb-item d-flex gap-1 align-items-center flex-wrap">
+            <select class="form-select form-select-sm w-auto" x-model="h.alias" aria-label="Column"><template x-for="a in aliases()" :key="a"><option :value="a" x-text="a" :selected="h.alias === a"></option></template></select>
+            <select class="form-select form-select-sm w-auto" x-model="h.op" aria-label="Operator" @change="h.value = h.op === 'between' ? ['', ''] : ''">
+              <template x-for="op in O.havingOperators" :key="op"><option :value="op" x-text="O.operatorLabels[op]" :selected="h.op === op"></option></template></select>
+            <template x-if="h.op === 'between'"><div class="d-flex gap-1 align-items-center"><input class="form-control form-control-sm qb-arg" x-model="h.value[0]"><span class="small text-secondary">and</span><input class="form-control form-control-sm qb-arg" x-model="h.value[1]"></div></template>
+            <template x-if="!['between', 'isnull', 'notnull'].includes(h.op)"><input class="form-control form-control-sm qb-arg" x-model="h.value" :placeholder="h.op === 'in' ? '1, 2, 3' : 'value'"></template>
+            <button type="button" class="btn btn-sm btn-ghost-danger px-1 ms-auto" title="Remove" @click="d.having.splice(i, 1)"><i class="ti ti-x"></i></button>
+          </div>
+        </template>
+        <button type="button" class="btn btn-sm mt-2" @click="d.having.push({_k: key(), alias: aliases()[0] || '', op: 'gt', value: ''})"><i class="ti ti-plus me-1"></i>Result condition</button>
+      </div>
+
+      {# ---- Sort & limit #}
+      <div x-show="tab === 'sort'" x-cloak>
+        <template x-for="(s, i) in d.sort" :key="s._k">
+          <div class="qb-item d-flex gap-1 align-items-center">
+            <span class="small text-secondary text-nowrap" x-text="i === 0 ? 'Sort by' : 'then by'"></span>
+            <select class="form-select form-select-sm" x-model="s.alias" aria-label="Sort column"><template x-for="a in aliases()" :key="a"><option :value="a" x-text="a" :selected="s.alias === a"></option></template></select>
+            <select class="form-select form-select-sm w-auto" x-model="s.dir" aria-label="Direction"><option value="asc">ascending</option><option value="desc">descending</option></select>
+            <button type="button" class="btn btn-sm btn-ghost-danger px-1" title="Remove" @click="d.sort.splice(i, 1)"><i class="ti ti-x"></i></button>
+          </div>
+        </template>
+        <button type="button" class="btn btn-sm mt-2" @click="d.sort.push({_k: key(), alias: aliases()[0] || '', dir: 'asc'})"><i class="ti ti-plus me-1"></i>Sort</button>
+        <hr class="my-3">
+        <label class="form-check" x-show="!grouped()"><input type="checkbox" class="form-check-input" x-model="d.distinct"><span class="form-check-label small">distinct rows only</span></label>
+        <label class="d-flex align-items-center gap-1 small mb-0">Top <input type="number" min="0" class="form-control form-control-sm qb-arg" x-model.number="d.limit" aria-label="Row limit"> rows <span class="text-secondary">(0 = all)</span></label>
+      </div>
+
+      {# ---- Chart #}
+      <div x-show="tab === 'chart'" x-cloak>
+        <label class="form-label small mb-1">Type</label>
+        <select class="form-select form-select-sm mb-2" x-model="d.chart.type" aria-label="Chart type"><option value="">No chart</option>
+          <template x-for="t in O.chartTypes" :key="t"><option :value="t" x-text="t" :selected="d.chart.type === t"></option></template></select>
+        <template x-if="d.chart.type"><div>
+          <label class="form-label small mb-1">Labels (x axis)</label>
+          <select class="form-select form-select-sm mb-2" x-model="d.chart.x" aria-label="Labels column"><option value="">choose…</option>
+            <template x-for="a in aliases()" :key="a"><option :value="a" x-text="a" :selected="d.chart.x === a"></option></template></select>
+          <label class="form-label small mb-1">Values</label>
+          <template x-for="a in numberAliases()" :key="a"><label class="form-check mb-1"><input type="checkbox" class="form-check-input" :value="a" x-model="d.chart.y"><span class="form-check-label small" x-text="a"></span></label></template>
+          <div class="small text-secondary" x-show="!numberAliases().length">Add a number or aggregated column first.</div>
+          <label class="form-check mt-2" x-show="['bar', 'line', 'area'].includes(d.chart.type)"><input type="checkbox" class="form-check-input" x-model="d.chart.stacked"><span class="form-check-label small">stacked</span></label>
+        </div></template>
+      </div>
+
+      {# ---- Save & share #}
+      <div x-show="tab === 'save'" x-cloak x-data="{ vis: '{{ saved.visibility|default:'private' }}' }">
+        {% if saved and saved.is_system %}<div class="mb-2"><span class="badge bg-blue-lt">Standard report</span></div>{% endif %}
+        <label class="form-label small mb-1" for="qb-name">Report name</label>
+        <input id="qb-name" name="name" class="form-control form-control-sm mb-2" placeholder="Report name" maxlength="150" value="{{ saved.name }}">
+        <label class="form-label small mb-1" for="qb-vis">Who can use it</label>
+        <select id="qb-vis" name="visibility" class="form-select form-select-sm mb-2" x-model="vis">
+          <option value="private">Only me</option><option value="users">Selected users / groups</option>
+          <option value="public">All users</option></select>
+        <div x-show="vis === 'users'" x-cloak>
+          <label class="form-label small mb-1">Users</label>
+          <select name="shared_users" multiple size="4" class="form-select form-select-sm mb-2">{% for u in share_users %}<option value="{{ u.pk }}" {% if u.pk in shared_user_ids %}selected{% endif %}>{{ u.full_name|default:u.email }} · {{ u.email }}</option>{% endfor %}</select>
+          <label class="form-label small mb-1">Groups</label>
+          <select name="shared_groups" multiple size="4" class="form-select form-select-sm mb-2">{% for g in share_groups %}<option value="{{ g.pk }}" {% if g.pk in shared_group_ids %}selected{% endif %}>{{ g.name }}</option>{% endfor %}</select>
+        </div>
+        {% if request.user.is_superuser %}<label class="form-check mb-2" title="Offer this report to every user who may use this table, in every company">
+          <input class="form-check-input" type="checkbox" name="is_system" value="1" {% if saved.is_system %}checked{% endif %}><span class="form-check-label small">Standard report (all companies)</span></label>{% endif %}
+{% if scope.enabled %}<label class="form-check mb-2" title="Run this report on the companies chosen above by default (each run can still change it)">
+          <input class="form-check-input" type="checkbox" name="keep_scope" value="1" {% if saved.company_scope %}checked{% endif %}><span class="form-check-label small">Remember the company choice</span></label>{% endif %}
+        <div class="mb-2">{% include "core/reports/_menu_place.html" %}</div>
+        <button class="btn btn-primary w-100" name="action" value="save"><i class="ti ti-device-floppy me-1"></i>{% if can_edit %}Save{% else %}Save as my copy{% endif %}</button>
+      </div>
+      </div>
+    </div>
+
+    <nav class="qb-rail" aria-label="Query sections">
+      <button type="button" class="qb-rail-btn" :class="panel && tab === 'joins' && 'active'" @click="pick('joins')" title="Joins"><i class="ti ti-link"></i><span class="qb-rail-label">Joins</span><span class="badge" x-show="d.joins.length" x-text="d.joins.length"></span></button>
+      <button type="button" class="qb-rail-btn" :class="panel && tab === 'columns' && 'active'" @click="pick('columns')" title="Columns"><i class="ti ti-columns"></i><span class="qb-rail-label">Columns</span><span class="badge" x-text="d.columns.length"></span></button>
+      <button type="button" class="qb-rail-btn" :class="panel && tab === 'filters' && 'active'" @click="pick('filters')" title="Filters"><i class="ti ti-filter"></i><span class="qb-rail-label">Filters</span><span class="badge" x-show="filterCount()" x-text="filterCount()"></span></button>
+      <button type="button" class="qb-rail-btn" x-show="grouped()" :class="panel && tab === 'group' && 'active'" @click="pick('group')" title="Group &amp; HAVING"><i class="ti ti-stack-2"></i><span class="qb-rail-label">Group</span><span class="badge" x-show="d.having.length" x-text="d.having.length"></span></button>
+      <button type="button" class="qb-rail-btn" :class="panel && tab === 'sort' && 'active'" @click="pick('sort')" title="Sort &amp; limit"><i class="ti ti-arrows-sort"></i><span class="qb-rail-label">Sort</span><span class="badge" x-show="d.sort.length" x-text="d.sort.length"></span></button>
+      <button type="button" class="qb-rail-btn" :class="panel && tab === 'chart' && 'active'" @click="pick('chart')" title="Chart"><i class="ti ti-chart-line"></i><span class="qb-rail-label">Chart</span><span class="qb-dot" x-show="d.chart.type"></span></button>
+      <button type="button" class="qb-rail-btn" :class="panel && tab === 'save' && 'active'" @click="pick('save')" title="Save &amp; share"><i class="ti ti-device-floppy"></i><span class="qb-rail-label">Save</span></button>
+      <button type="button" class="qb-rail-btn qb-rail-end" @click="panel = !panel" :title="panel ? 'Hide the editor' : 'Show the editor'">
+        <i class="ti" :class="panel ? 'ti-layout-sidebar-right-collapse' : 'ti-layout-sidebar-right-expand'"></i><span class="qb-rail-label" x-text="panel ? 'Hide' : 'Show'"></span></button>
+    </nav>
+  </aside>
+</form>
+{% endblock %}
+{% block scripts %}<script src="{% static 'core/vendor/chartjs/chart.umd.min.js' %}"></script><script src="{% static 'core/js/charts.js' %}"></script><script src="{% static 'core/js/query.js' %}"></script>{% endblock %}

@@ -1,0 +1,12 @@
+{% extends "core/base.html" %}{% load core_tags %}
+{% block title %}{% if creating %}New {{ cfg.label }}{% else %}Edit {{ obj }}{% endif %}{% endblock %}
+{% block heading %}{% if creating %}New {{ cfg.label|lower }}{% else %}Edit {{ obj }}{% endif %}{% endblock %}
+{% block content %}
+<form method="post" {% if multipart %}enctype="multipart/form-data"{% endif %} novalidate>{% csrf_token %}
+  {% if form.errors or nodes|tree_has_errors %}<div class="alert alert-danger" role="alert">Please correct the errors below.</div>{% endif %}
+  {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+  <div class="card mb-3"><div class="card-body">{% include "core/crud/_form_body.html" %}</div></div>
+  <div class="d-flex gap-2"><button class="btn btn-primary" type="submit">Save</button>
+    <a class="btn" href="{% if obj %}{% url 'core:resource_detail' cfg.slug obj.pk %}{% else %}{% url 'core:resource_list' cfg.slug %}{% endif %}">Cancel</a></div>
+</form>
+{% endblock %}

@@ -1,0 +1,6 @@
+{% load core_tags %}{% comment %}Nested sidebar items, any depth: a child with children becomes a collapsible sub-menu that includes this template again
+(collapse, not nested Bootstrap dropdowns: those toggle each other).{% endcomment %}
+{% for c in children %}{% if c.children %}<div class="core-submenu">
+  <a class="dropdown-item dropdown-toggle {% if not c|any_active:core_path %}collapsed{% endif %}" href="#core-sub-{{ c.key|slugify }}" data-bs-toggle="collapse" role="button" aria-expanded="{% if c|any_active:core_path %}true{% else %}false{% endif %}">{% if c.icon %}<i class="ti ti-{{ c.icon }} me-2"></i>{% endif %}{{ c.title }}</a>
+  <div class="collapse {% if c|any_active:core_path %}show{% endif %}" id="core-sub-{{ c.key|slugify }}">{% include "core/_menu_children.html" with children=c.children %}</div>
+</div>{% elif c.url %}<a class="dropdown-item {% if c|is_active_path:core_path %}active{% endif %}" href="{{ c.url }}">{% if c.icon %}<i class="ti ti-{{ c.icon }} me-2"></i>{% endif %}{{ c.title }}</a>{% endif %}{% endfor %}

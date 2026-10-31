@@ -1,0 +1,4 @@
+{% if error %}<div class="alert alert-danger">{{ error }}</div>{% else %}
+<div class="text-secondary mb-2">{{ total }} match{{ total|pluralize:"es" }}</div>
+<div class="table-responsive"><table class="table table-sm"><thead><tr>{% for h in headers %}<th>{{ h }}</th>{% endfor %}</tr></thead>
+<tbody>{% for r in rows %}<tr>{% for c in r %}<td>{{ c }}</td>{% endfor %}</tr>{% endfor %}</tbody></table></div>{% endif %}

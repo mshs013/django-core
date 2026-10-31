@@ -1,0 +1,15 @@
+{% extends "core/base.html" %}{% block title %}Background jobs{% endblock %}{% block heading %}Background jobs{% endblock %}
+{% block content %}
+<form method="get" class="card mb-3"><div class="card-body d-flex flex-wrap gap-2 align-items-end">
+  <div><label class="form-label">Job</label><select name="type" class="form-select"><option value="">All</option>{% for t in types %}<option value="{{ t.name }}"{% if t.name == job_type %} selected{% endif %}>{{ t.label }}</option>{% endfor %}</select></div>
+  <div><label class="form-label">Status</label><select name="status" class="form-select"><option value="">All</option>{% for v, l in statuses %}<option value="{{ v }}"{% if v == status %} selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+  {% if everyone %}<label class="form-check mb-2"><input class="form-check-input" type="checkbox" name="mine" value="1"{% if mine %} checked{% endif %}><span class="form-check-label">Only mine</span></label>{% endif %}
+  <button class="btn">Filter</button></div></form>
+<div class="card"><div class="table-responsive"><table class="table card-table table-vcenter"><thead><tr><th>Job</th><th>Status</th>{% if everyone %}<th>Started by</th>{% endif %}<th>Requested</th><th>Took</th><th></th></tr></thead><tbody>
+{% for job in jobs %}<tr><td><a href="{% url 'core:job_detail' job.pk %}">{{ job }}</a>{% if job.progress_message and job.is_active %}<div class="small text-secondary">{{ job.progress_message }}</div>{% endif %}</td>
+<td>{% include "core/jobs/_status.html" %}{% if job.error %}<div class="small text-danger">{{ job.error|truncatechars:120 }}</div>{% endif %}</td>
+{% if everyone %}<td>{{ job.created_by|default:"—" }}</td>{% endif %}<td>{{ job.created_at|date:"DATETIME_FORMAT" }}</td>
+<td>{% if job.duration_seconds is not None %}{{ job.duration_seconds }} s{% else %}—{% endif %}</td>
+<td class="text-end">{% if job.has_file %}<a class="btn btn-sm" href="{% url 'core:job_download' job.pk %}">Download</a>{% endif %}</td></tr>
+{% empty %}<tr><td colspan="6" class="text-center text-secondary py-4">No background jobs.</td></tr>{% endfor %}</tbody></table></div>
+<div class="card-footer d-flex">{% include "core/_pager.html" %}</div></div>{% endblock %}

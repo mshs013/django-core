@@ -1,0 +1,5 @@
+{% extends "core/base.html" %}{% block title %}My requests{% endblock %}{% block heading %}My requests{% endblock %}
+{% block actions %}<a class="btn" href="{% url 'core:approval_queue' %}"><i class="ti ti-checklist me-1"></i>Awaiting my approval</a>{% endblock %}
+{% block content %}<div class="card"><div class="table-responsive"><table class="table card-table"><thead><tr><th>Request</th><th>Type</th><th>Status</th><th>Submitted</th><th></th></tr></thead><tbody>
+{% for r in requests %}<tr><td>{{ r.object_repr }}</td><td>{{ r.approval_type.name }}</td><td>{{ r.get_status_display }}</td><td>{{ r.created_at|date:"DATETIME_FORMAT" }}</td><td><a class="btn btn-sm" href="{% url 'core:approval_detail' r.pk %}">Open</a></td></tr>
+{% empty %}<tr><td colspan="5" class="text-center text-secondary py-4">No requests.</td></tr>{% endfor %}</tbody></table></div></div>{% endblock %}

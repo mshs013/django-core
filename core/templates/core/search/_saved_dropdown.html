@@ -1,0 +1,11 @@
+{% if saved_list %}<div class="dropdown"><a class="btn btn-sm dropdown-toggle" data-bs-toggle="dropdown">Saved searches</a>
+  <div class="dropdown-menu">
+  {% for s in saved_list %}<div class="d-flex align-items-center">
+    <a class="dropdown-item flex-fill" href="?saved={{ s.pk }}">{{ s.name }}{% if s.is_default %} ★{% endif %}{% if s.is_system %} <span class="badge bg-blue-lt ms-1">Standard</span>{% endif %}</a>
+    {% if can_build and s.owner_id == request.user.pk and not s.is_system %}
+    <form method="post" action="{% url 'core:search_action' s.pk 'default' %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><button class="btn btn-sm btn-link" title="Make default">★</button></form>
+    {% endif %}
+    {% if can_build and s.owner_id == request.user.pk and not s.is_system or s.is_system and request.user.is_superuser %}
+    <form method="post" action="{% url 'core:search_action' s.pk 'delete' %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><button class="btn btn-sm btn-link text-danger" title="Delete">×</button></form>
+    {% endif %}</div>{% endfor %}
+  </div></div>{% endif %}

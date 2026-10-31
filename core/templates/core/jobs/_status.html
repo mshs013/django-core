@@ -1,0 +1,1 @@
+{% if job.status == "done" %}<span class="badge bg-green-lt">Done</span>{% elif job.status == "failed" %}<span class="badge bg-red-lt">Failed</span>{% elif job.status == "running" %}<span class="badge bg-blue-lt">Running {{ job.progress }}%</span>{% else %}<span class="badge bg-secondary-lt">Queued</span>{% endif %}

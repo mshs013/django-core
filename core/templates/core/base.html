@@ -1,0 +1,82 @@
+{% load static core_tags %}<!doctype html>
+<html lang="en" data-bs-navbar-position="vertical" data-bs-layout="fluid" data-theme-pref="{{ core_theme|default:'system' }}">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  <title>{% block title %}{% endblock %} · Core</title>
+  {# theme.js is NOT deferred: it sets data-bs-theme before first paint (system / light / dark) #}
+  <script src="{% static 'core/js/theme.js' %}"></script>
+  <link rel="stylesheet" href="{% static 'core/vendor/tabler/css/tabler.min.css' %}">
+  <link rel="stylesheet" href="{% static 'core/vendor/icons/tabler-icons.min.css' %}">
+  <link rel="stylesheet" href="{% static 'core/css/core.css' %}">
+  <script src="{% static 'core/vendor/htmx/htmx.min.js' %}" defer></script>
+  <script src="{% static 'core/js/core.js' %}" defer></script>
+  <script src="{% static 'core/vendor/alpine/alpine.min.js' %}" defer></script>
+</head>
+<body data-theme-url="{% url 'core:theme' %}" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}' {% if core_idle_seconds %}data-idle="{{ core_idle_seconds }}"{% endif %}>
+{% if user.is_authenticated %}
+{# ---- desktop header, full width above the sidebar: fold button, active company's logo + name, user menu (phones use the sidebar's own navbar) ---- #}
+<header class="core-topbar d-none d-lg-flex align-items-center gap-2 ps-2 pe-3 border-bottom d-print-none">
+  {# fold the sidebar to its icons; the choice is remembered per browser by theme.js #}
+  <button type="button" class="btn btn-ghost-secondary btn-icon core-sidebar-toggle" data-core-sidebar-toggle aria-pressed="false" title="Collapse / expand the sidebar" aria-label="Collapse / expand the sidebar">
+    <i class="ti ti-layout-sidebar-left-collapse fs-2 core-fold-icon"></i><i class="ti ti-layout-sidebar-left-expand fs-2 core-unfold-icon"></i></button>
+  <a href="{% url 'core:dashboard' %}" class="core-brand d-flex align-items-center gap-2 text-reset text-decoration-none me-auto" title="{{ core_active_company.name|default:'Dashboard' }}">
+    {% if core_active_company %}{% with c=core_active_company %}<span class="core-company-logo">{% if c.logo %}<img src="{% company_logo_src c %}" height="40" decoding="sync" alt="{{ c.name }} logo">{% else %}<span class="avatar">{{ c.abbreviation|slice:":3"|upper }}</span>{% endif %}</span>{% endwith %}{% else %}<i class="ti ti-building-factory-2 fs-1"></i>{% endif %}
+    <span class="core-company-name text-truncate">{{ core_active_company.name|default:"" }}</span></a>
+  {% include "core/_usermenu.html" %}
+</header>
+{% endif %}
+<div class="page">
+{% if user.is_authenticated %}
+  {# ---- vertical sidebar (Tabler "layout-fluid-vertical"); on desktop it starts below the header ---- #}
+  <aside class="navbar navbar-vertical navbar-expand-lg">
+    <div class="container-fluid">
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#sidebar-menu" aria-controls="sidebar-menu" aria-expanded="false" aria-label="Toggle navigation"><span class="navbar-toggler-icon"></span></button>
+      {# phones only: the active company's logo (on desktop it is in the header) #}
+      <h1 class="navbar-brand navbar-brand-autodark core-brand d-lg-none"><a href="{% url 'core:dashboard' %}" class="d-flex align-items-center justify-content-end w-100 text-reset text-decoration-none" title="{{ core_active_company.name|default:'Dashboard' }}">
+        {% if core_active_company %}{% with c=core_active_company %}<span class="core-company-logo">{% if c.logo %}<img src="{% company_logo_src c %}" height="40" decoding="sync" alt="{{ c.name }} logo">{% else %}<span class="avatar">{{ c.abbreviation|slice:":3"|upper }}</span>{% endif %}</span>{% endwith %}{% else %}<i class="ti ti-building-factory-2 fs-1"></i>{% endif %}</a></h1>
+      <div class="navbar-nav flex-row d-lg-none">{% include "core/_usermenu.html" with compact=True %}</div>
+      <div class="collapse navbar-collapse" id="sidebar-menu">
+        <ul class="navbar-nav pt-lg-3">
+          {% for e in core_menu %}
+            {% if e.children %}
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle {% if e|any_active:core_path %}show{% endif %}" href="#grp{{ forloop.counter }}" data-bs-toggle="dropdown" data-bs-auto-close="false" role="button" title="{{ e.title }}" aria-expanded="{% if e|any_active:core_path %}true{% else %}false{% endif %}">
+                <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="ti ti-{{ e.icon|default:'folder' }}"></i></span><span class="nav-link-title">{{ e.title }}</span></a>
+              <div class="dropdown-menu {% if e|any_active:core_path %}show{% endif %}">
+                {% include "core/_menu_children.html" with children=e.children %}
+              </div>
+            </li>
+            {% elif e.url %}
+            <li class="nav-item {% if e|is_active_path:core_path %}active{% endif %}"><a class="nav-link" href="{{ e.url }}" title="{{ e.title }}"><span class="nav-link-icon d-md-none d-lg-inline-block"><i class="ti ti-{{ e.icon|default:'circle' }}"></i></span><span class="nav-link-title">{{ e.title }}</span></a></li>
+            {% endif %}
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </aside>
+{% endif %}
+  <div class="page-wrapper">
+    <div class="page-header d-print-none"><div class="container-fluid">
+      <div class="row g-2 align-items-center"><div class="col"><h2 class="page-title">{% block heading %}{% endblock %}</h2></div>
+      <div class="col-auto ms-auto d-print-none"><div class="btn-list">{% block actions %}{% endblock %}</div></div></div></div></div>
+    <div class="page-body"><div class="container-fluid">
+      {% for m in messages %}<div class="alert alert-{% if m.tags == 'error' %}danger{% else %}{{ m.tags|default:'info' }}{% endif %} alert-dismissible" role="alert">{{ m }}<a class="btn-close" data-bs-dismiss="alert" aria-label="Close"></a></div>{% endfor %}
+      {% block content %}{% endblock %}
+    </div></div>
+{% if user.is_authenticated %}
+    <footer class="core-footer d-print-none border-top px-3 py-2 small text-secondary d-flex align-items-center gap-2">
+      <span class="text-truncate">Copyright &copy; {% now "Y" %} OCMS. Developed by OCMS Team</span>
+      <span class="ms-auto text-truncate"><a href="http://ocmsbd.com" target="_blank" rel="noopener"><strong>Easy, Simple and Smart</strong></a></span>
+    </footer>
+{% endif %}
+  </div>
+</div>
+{% if user.is_authenticated %}
+<div class="modal modal-blur fade" id="core-modal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable" id="core-modal-dialog"><div class="modal-content" id="core-modal-content"></div></div></div>
+<div class="toast-container position-fixed top-0 end-0 p-3" id="core-toasts" style="z-index:1090"></div>
+{% endif %}
+<script src="{% static 'core/vendor/tabler/js/tabler.min.js' %}"></script>
+<script src="{% static 'core/js/modal.js' %}" defer></script>
+{% block scripts %}{% endblock %}
+</body></html>

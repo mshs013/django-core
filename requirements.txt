@@ -1,0 +1,13 @@
+# Runtime dependencies (Python 3.12+). Install: pip install -r requirements.txt
+# plus the database driver: requirements-postgresql.txt (PostgreSQL, default) or requirements-mysql.txt (MySQL 8 / MariaDB);
+# SQLite needs no driver.
+Django==5.2.18
+django-filter==25.2
+django-import-export[xlsx,xls,ods,yaml]==4.3.14
+django-guardian==3.0.3
+django-q2==1.8.0
+reportlab==5.0.1
+Pillow==12.3.0
+argon2-cffi==25.1.0
+whitenoise==6.11.0
+gunicorn==23.0.0

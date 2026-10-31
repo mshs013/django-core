@@ -1,0 +1,4 @@
+{% load core_tags %}{# a row of form fields; wide widgets (text areas, checkbox lists) take the full width #}
+<div class="row">
+  {% for field in fields %}{% with t=field|widget_type %}<div class="{% if t == 'Textarea' or t == 'CheckboxList' or t == 'GroupedCheckboxList' %}col-12{% else %}col-md-6{% endif %}"{% if field.field.show_when %} x-data="showWhen" data-show-when="{{ field.field.show_when|json_attr }}" x-show="shown"{% endif %}>{% include "core/_field.html" %}</div>{% endwith %}{% endfor %}
+</div>

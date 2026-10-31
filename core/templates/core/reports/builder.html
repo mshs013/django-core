@@ -1,0 +1,99 @@
+{% extends "core/base.html" %}{% load static core_tags %}
+{% block title %}{{ source.label }}{% endblock %}{% block heading %}{% if saved %}{{ saved.name }} <span class="text-secondary fs-4">· {{ source.label }}</span>{% else %}{{ source.label }}{% endif %}{% endblock %}
+{% block actions %}{% if back_url %}<a class="btn" href="{{ back_url }}">Back to list</a>{% endif %}<a class="btn" href="{% url 'core:report_list' %}">Reports</a>{% endblock %}
+{% block content %}
+{% include "core/search/_bar.html" with hx_target="report-preview" hx_include="[name=definition], [name=company_scope], [name=companies]" hx_push="false" %}
+{% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+<form method="post" action="?{{ request.GET.urlencode }}" x-data="reportBuilder" data-definition="{{ definition|json_attr }}" data-kinds="{{ column_kinds|json_attr }}">
+  {% csrf_token %}
+  <input type="hidden" name="definition" :value="definition()">
+  <div class="row g-3">
+    {# ------------------------------------------------ report options: a collapsible panel on the left #}
+    <div class="col-xl-3 col-lg-4 rb-panel" x-show="panel">
+      <div class="card">
+        <div class="accordion accordion-flush" id="rb-sections">
+          <div class="accordion-item"><h2 class="accordion-header"><button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#rb-columns">Columns <span class="badge bg-secondary-lt ms-2" x-text="d.columns.length"></span></button></h2>
+            <div id="rb-columns" class="accordion-collapse collapse show"><div class="accordion-body pt-0 rb-scroll">
+              {% for c in source_columns %}<label class="form-check"><input class="form-check-input" type="checkbox" value="{{ c.name }}" x-model="d.columns"><span class="form-check-label">{{ c.label }}</span></label>{% endfor %}
+            </div></div></div>
+          <div class="accordion-item"><h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#rb-groups">Group by <span class="badge bg-secondary-lt ms-2" x-show="d.groupings.length" x-text="d.groupings.length"></span></button></h2>
+            <div id="rb-groups" class="accordion-collapse collapse"><div class="accordion-body pt-0 rb-scroll">
+              {% for c in source_columns %}{% if c.groupable %}<label class="form-check"><input class="form-check-input" type="checkbox" value="{{ c.name }}" x-model="d.groupings"><span class="form-check-label">{{ c.label }}</span></label>{% endif %}{% endfor %}
+            </div></div></div>
+          <div class="accordion-item"><h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#rb-aggs">Aggregates <span class="badge bg-secondary-lt ms-2" x-show="d.aggregates.length" x-text="d.aggregates.length"></span></button></h2>
+            <div id="rb-aggs" class="accordion-collapse collapse"><div class="accordion-body pt-0">
+              <template x-for="(a, i) in d.aggregates" :key="i"><div class="input-group input-group-sm mb-1">
+                <select class="form-select" x-model="a.fn">{% for f in aggregate_fns %}<option>{{ f }}</option>{% endfor %}</select>
+                <select class="form-select" x-model="a.column"><option value="">(rows)</option>{% for c in source_columns %}{% if c.aggregates %}<option value="{{ c.name }}">{{ c.label }}</option>{% endif %}{% endfor %}</select>
+                <button type="button" class="btn" @click="d.aggregates.splice(i,1)" aria-label="Remove">×</button></div></template>
+              <button type="button" class="btn btn-sm" @click="d.aggregates.push({fn:'count',column:''})">+ Aggregate</button>
+            </div></div></div>
+          <div class="accordion-item"><h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#rb-chart">Chart <span class="badge bg-green-lt ms-2" x-show="d.chart.type" x-text="d.chart.type"></span></button></h2>
+            <div id="rb-chart" class="accordion-collapse collapse"><div class="accordion-body pt-0">
+              <select class="form-select form-select-sm mb-1" x-model="d.chart.type" aria-label="Chart type"><option value="">No chart</option>
+                <option value="bar">Bar</option><option value="line">Line</option><option value="area">Area</option><option value="pie">Pie</option><option value="doughnut">Doughnut</option></select>
+              <div x-show="d.chart.type">
+                <select class="form-select form-select-sm mb-1" x-model="d.chart.x" aria-label="Labels column"><option value="">labels from…</option>
+                  <template x-for="o in outputs()" :key="o"><option :value="o" x-text="o" :selected="d.chart.x === o"></option></template></select>
+                <div class="small text-secondary">values</div>
+                <template x-for="o in numberOutputs()" :key="o"><label class="form-check mb-0"><input type="checkbox" class="form-check-input" :value="o" x-model="d.chart.y"><span class="form-check-label" x-text="o"></span></label></template>
+                <div class="small text-secondary" x-show="!numberOutputs().length">Add an aggregate (e.g. count) or a number column first.</div>
+                <label class="form-check mb-0" x-show="['bar', 'line', 'area'].includes(d.chart.type)"><input type="checkbox" class="form-check-input" x-model="d.chart.stacked"><span class="form-check-label">stacked</span></label>
+              </div>
+            </div></div></div>
+        </div>
+        <div class="card-footer d-flex flex-column gap-2">
+          {% if source.date_field %}<div>{# run filter on the source's date: changeable on every run (Preview / Export), saved with the report #}
+            <label class="form-label small mb-1" for="rb-date-preset">{{ date_label }}</label>
+            <select id="rb-date-preset" class="form-select form-select-sm mb-1" x-model="d.parameters.date_preset">
+              <option value="">Any date / from – to</option><option value="day">One day</option><option value="today">Today</option>
+              <option value="yesterday">Yesterday</option><option value="this_week">This week</option><option value="this_month">This month</option>
+              <option value="last_month">Last month</option></select>
+            <div class="d-flex gap-1" x-show="!d.parameters.date_preset || d.parameters.date_preset === 'day'">
+              <input type="date" class="form-control form-control-sm" x-model="d.parameters.date_from" aria-label="From" title="From">
+              <input type="date" class="form-control form-control-sm" x-model="d.parameters.date_to" x-show="!d.parameters.date_preset" aria-label="To" title="To">
+            </div>
+          </div>{% endif %}
+          <div class="d-flex gap-1">
+            <button type="button" class="btn btn-primary flex-fill" hx-get="{{ request.path }}" hx-target="#report-preview" hx-include="[name=definition], #search-form, [name=company_scope], [name=companies]" hx-push-url="false">Preview</button>
+            <select name="format" class="form-select w-auto" aria-label="Export format">{% for f in formats %}<option>{{ f }}</option>{% endfor %}</select><button class="btn" name="action" value="export">Export</button>
+          </div>
+          {% include "core/reports/_company_scope.html" %}
+          <div class="d-flex gap-1 flex-wrap" x-data="{ vis: '{{ saved.visibility|default:'private' }}' }">
+            {% if saved and saved.is_system %}<span class="badge bg-blue-lt">Standard report</span>{% endif %}
+            <input name="name" class="form-control" placeholder="Report name" maxlength="150" value="{{ saved.name }}" aria-label="Report name">
+            <select name="visibility" class="form-select" x-model="vis" aria-label="Who can use it">
+              <option value="private">Only me</option><option value="users">Selected users / groups</option>
+              <option value="public">All users</option></select>
+            {% if request.user.is_superuser %}<label class="form-check mb-0" title="Offer this report to every user who can use this source, in every company">
+              <input class="form-check-input" type="checkbox" name="is_system" value="1" {% if saved.is_system %}checked{% endif %}><span class="form-check-label">Standard (all users)</span></label>{% endif %}
+{% if scope.enabled %}<label class="form-check mb-2" title="Run this report on the companies chosen above by default (each run can still change it)">
+              <input class="form-check-input" type="checkbox" name="keep_scope" value="1" {% if saved.company_scope %}checked{% endif %}><span class="form-check-label small">Remember the company choice</span></label>{% endif %}
+            {% include "core/reports/_menu_place.html" %}
+            <button class="btn w-100" name="action" value="save">{% if can_edit %}Save{% else %}Save as my copy{% endif %}</button>
+            <div class="w-100" x-show="vis === 'users'" x-cloak>
+              <label class="form-label small mb-1">Users</label>
+              <select name="shared_users" multiple size="4" class="form-select mb-1">{% for u in share_users %}<option value="{{ u.pk }}" {% if u.pk in shared_user_ids %}selected{% endif %}>{{ u.full_name|default:u.email }} · {{ u.email }}</option>{% endfor %}</select>
+              <label class="form-label small mb-1">Groups</label>
+              <select name="shared_groups" multiple size="3" class="form-select">{% for g in share_groups %}<option value="{{ g.pk }}" {% if g.pk in shared_group_ids %}selected{% endif %}>{{ g.name }}</option>{% endfor %}</select>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {# ------------------------------------------------ chart + results #}
+    <div :class="panel ? 'col-xl-9 col-lg-8' : 'col-12'">
+      <div class="card">
+        <div class="card-header">
+          <button type="button" class="btn btn-sm me-2" @click="panel = !panel" :title="panel ? 'Hide the report options' : 'Show the report options'">
+            <i class="ti" :class="panel ? 'ti-layout-sidebar-left-collapse' : 'ti-layout-sidebar-left-expand'"></i><span class="ms-1" x-text="panel ? 'Hide options' : 'Show options'"></span></button>
+          <h3 class="card-title">Results</h3>
+          <button type="button" class="btn btn-sm btn-primary ms-auto" hx-get="{{ request.path }}" hx-target="#report-preview" hx-include="[name=definition], #search-form, [name=company_scope], [name=companies]" hx-push-url="false">Preview</button>
+        </div>
+        <div class="card-body" id="report-preview">{% if rows is not None or error %}{% include "core/reports/_preview.html" %}{% else %}<div class="text-secondary">Choose columns and press Preview.</div>{% endif %}</div>
+      </div>
+    </div>
+  </div>
+</form>
+{% endblock %}
+{% block scripts %}<script src="{% static 'core/vendor/chartjs/chart.umd.min.js' %}"></script><script src="{% static 'core/js/charts.js' %}"></script>{% endblock %}

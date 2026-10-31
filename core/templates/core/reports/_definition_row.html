@@ -1,0 +1,7 @@
+<div class="list-group-item d-flex align-items-center gap-2">
+  <a class="flex-fill" href="{% url 'core:report_builder' d.source_key %}?def={{ d.pk }}">{{ d.name }}</a>
+  {% if d.menu_path %}<span class="text-secondary" title="In the menu under {{ d.menu_path }}"><i class="ti ti-menu-2" aria-hidden="true"></i><span class="visually-hidden">In the menu under {{ d.menu_path }}</span></span>{% endif %}
+  {% if not d.is_system %}<span class="badge bg-secondary-lt">{{ d.get_visibility_display }}</span>{% if d.owner_id != request.user.pk %}<span class="text-secondary small">{{ d.owner.email }}</span>{% endif %}{% endif %}
+  <form method="post" action="{% url 'core:report_definition_action' d.pk 'clone' %}">{% csrf_token %}<button class="btn btn-sm">Clone</button></form>
+  {% if d.editable %}<form method="post" action="{% url 'core:report_definition_action' d.pk 'delete' %}">{% csrf_token %}<button class="btn btn-sm btn-outline-danger">Delete</button></form>{% endif %}
+</div>

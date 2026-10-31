@@ -1,0 +1,17 @@
+{% extends "core/base.html" %}{% load core_tags %}{% block title %}{{ job }}{% endblock %}{% block heading %}{{ job }}{% endblock %}
+{% block content %}
+<div class="mb-3 d-flex gap-2"><a class="btn" href="{% url 'core:job_list' %}">All jobs</a>
+  {% if job.has_file %}<a class="btn btn-primary" href="{% url 'core:job_download' job.pk %}">Download result</a>{% endif %}
+  {% if can_retry %}<form method="post" action="{% url 'core:job_retry' job.pk %}">{% csrf_token %}<button class="btn btn-outline-warning">Run again</button></form>{% endif %}</div>
+<div class="card"><div class="card-body"><dl class="row mb-0">
+  <dt class="col-sm-3">Status</dt><dd class="col-sm-9">{% include "core/jobs/_status.html" %}{% if job.progress_message %} <span class="text-secondary">{{ job.progress_message }}</span>{% endif %}</dd>
+  <dt class="col-sm-3">Job type</dt><dd class="col-sm-9"><code>{{ job.job_type }}</code></dd>
+  <dt class="col-sm-3">Started by</dt><dd class="col-sm-9">{{ job.created_by|default:"—" }}{% if job.company %} <span class="badge bg-secondary-lt">{{ job.company.abbreviation }}</span>{% endif %}</dd>
+  <dt class="col-sm-3">Requested</dt><dd class="col-sm-9">{{ job.created_at|date:"DATETIME_FORMAT" }}</dd>
+  <dt class="col-sm-3">Started / finished</dt><dd class="col-sm-9">{{ job.started_at|date:"DATETIME_FORMAT"|dash }} / {{ job.finished_at|date:"DATETIME_FORMAT"|dash }}{% if job.duration_seconds is not None %} ({{ job.duration_seconds }} s){% endif %}</dd>
+  <dt class="col-sm-3">Runs</dt><dd class="col-sm-9">{{ job.attempts }}</dd>
+  {% if job.error %}<dt class="col-sm-3">Error</dt><dd class="col-sm-9"><pre class="text-danger mb-0" style="white-space: pre-wrap">{{ job.error }}</pre></dd>{% endif %}
+  {% if job.params %}<dt class="col-sm-3">Parameters</dt><dd class="col-sm-9"><ul class="mb-0">{% for k, v in job.params.items %}<li><code>{{ k }}</code>: {{ v }}</li>{% endfor %}</ul></dd>{% endif %}
+  {% if job.result %}<dt class="col-sm-3">Result</dt><dd class="col-sm-9"><ul class="mb-0">{% for k, v in job.result.items %}<li><code>{{ k }}</code>: {{ v }}</li>{% endfor %}</ul></dd>{% endif %}
+  {% if job.file_name %}<dt class="col-sm-3">Result file</dt><dd class="col-sm-9">{% if job.file_deleted %}removed {{ job.file_deleted_at|date:"DATETIME_FORMAT" }} (retention){% else %}{{ job.download_name }}{% endif %}</dd>{% endif %}
+</dl></div></div>{% endblock %}

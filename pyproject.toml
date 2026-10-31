@@ -1,0 +1,45 @@
+# Packaging for the reusable `core` app: another Django project can `pip install` it instead of copying the folder.
+#   pip install <path or git url>                     core only (bring your own database driver)
+#   pip install "<path>[postgres]"                    + psycopg            ([mysql] = mysqlclient for MySQL 8 / MariaDB)
+#   pip install "<path>[postgres,server]"             + whitenoise, argon2, gunicorn (what config/settings/ uses)
+# Only `core*` is packaged; `config/` and `tests/` stay in this repository.
+# Pins are kept in lockstep with requirements.txt / requirements-postgresql.txt / requirements-mysql.txt / requirements-dev.txt
+# (tests/test_packaging.py checks it).
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "django-core"
+version = "0.1.0"
+description = "Reusable Django ERP foundation: companies, users, roles, row-level access, CRUD, search, reports, approvals, audit, menu, mail, backups."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "Proprietary" }
+dependencies = [
+    "Django==5.2.18",
+    "django-filter==25.2",
+    "django-import-export[xlsx,xls,ods,yaml]==4.3.14",
+    "django-guardian==3.0.3",
+    "django-q2==1.8.0",
+    "reportlab==5.0.1",
+    "Pillow==12.3.0",
+]
+
+[project.optional-dependencies]
+postgres = ["psycopg[binary]==3.2.13"]
+mysql = ["mysqlclient==2.3.0"]
+server = [
+    "whitenoise==6.11.0",
+    "argon2-cffi==25.1.0",
+    "gunicorn==23.0.0; sys_platform != 'win32'",
+]
+dev = ["coverage==7.11.0", "pip-audit==2.9.0"]
+
+[tool.setuptools.packages.find]
+include = ["core*"]
+
+[tool.setuptools.package-data]
+core = ["templates/**/*", "static/**/*"]
+"core.seeder" = ["templates/**/*"]

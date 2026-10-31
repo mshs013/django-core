@@ -1,0 +1,46 @@
+{% extends "core/base.html" %}{% block title %}Seed data{% endblock %}{% block heading %}Seed data{% endblock %}
+{% block content %}
+{% if not enabled %}<div class="alert alert-warning">The seeder is disabled on this server (DEBUG is off). Set <code>SEEDER_ENABLED = True</code> only on a throw-away database.</div>{% endif %}
+<form method="post" class="card mb-3">{% csrf_token %}<input type="hidden" name="action" value="generate">
+  <div class="card-header"><h3 class="card-title">Generate demo data</h3></div>
+  <div class="card-body">
+    <div class="row g-3 mb-3">
+      <div class="col-6 col-md-2"><label class="form-label" for="seed-count">Rows per model</label><input id="seed-count" type="number" name="count" value="10" min="1" max="200" class="form-control"></div>
+      <div class="col-6 col-md-2"><label class="form-label" for="seed-users">New users</label><input id="seed-users" type="number" name="users" value="5" min="0" max="50" class="form-control"></div>
+      <div class="col-6 col-md-2"><label class="form-label" for="seed-companies">New companies</label><input id="seed-companies" type="number" name="companies" value="0" min="0" max="10" class="form-control"></div>
+      <div class="col-6 col-md-2"><label class="form-label" for="seed-seed">Random seed</label><input id="seed-seed" type="text" name="seed" inputmode="numeric" pattern="-?[0-9]+" placeholder="empty = random, e.g. 42" title="A whole number, e.g. 42" class="form-control"></div>
+      <div class="col-12 col-md-4 d-flex align-items-end"><label class="form-check mb-2"><input class="form-check-input" type="checkbox" name="activity" value="1" checked>
+        <span class="form-check-label">Activity: approval requests, decisions, notifications and mail</span></label></div>
+    </div>
+    <p class="text-secondary small mb-2">New users sign in with the password <code>{{ password }}</code>. They get the role “Seed: business access” and access to all rows.
+      Existing companies are reused. Parents are filled before children; inline rows (lines, options…) are added to every record.</p>
+    <dl class="row small text-secondary mb-0">
+      <dt class="col-sm-2">Rows per model</dt><dd class="col-sm-10">How many records each ticked model gets (1–200). Departments and designations
+        (shared by every company) get this many too; inline rows (1–4 per record) come on top.</dd>
+      <dt class="col-sm-2">New users</dt><dd class="col-sm-10">Demo people to create (0–50), each a member of one or two companies. 0 keeps the seeded users you already have.</dd>
+      <dt class="col-sm-2">New companies</dt><dd class="col-sm-10">Extra companies to add (0–10). Existing companies are always used too; one is made when there are none.</dd>
+      <dt class="col-sm-2">Random seed</dt><dd class="col-sm-10">Any whole number, e.g. <code>1</code>, <code>42</code> or <code>2026</code>. Leave it empty
+        for different data every time. The same seed on the same starting data gives the same names, amounts and picks again, which helps to
+        reproduce a bug or a demo. Numbers already in the tables (codes, e-mails) keep counting up, so a second run with the same seed
+        is not an exact copy.</dd>
+      <dt class="col-sm-2">Activity</dt><dd class="col-sm-10">After the rows are made, about 60 % of approvable records are submitted for approval and some steps
+        are decided (this raises notifications), and up to 10 internal mails are sent between seeded users.</dd>
+    </dl>
+  </div>
+  <div class="table-responsive"><table class="table card-table table-vcenter">
+    <thead><tr><th class="w-1"></th><th>Model</th><th>App</th><th class="text-end">Rows</th><th class="text-end">Seeded</th></tr></thead><tbody>
+    {% for r in rows %}<tr><td><input class="form-check-input" type="checkbox" name="models" value="{{ r.key }}" id="m-{{ forloop.counter }}" checked></td>
+      <td><label for="m-{{ forloop.counter }}">{{ r.name }}</label> <span class="text-secondary small">{{ r.key }}</span></td><td>{{ r.app }}</td>
+      <td class="text-end">{{ r.rows }}</td><td class="text-end">{{ r.seeded|default:"—" }}</td></tr>
+    {% empty %}<tr><td colspan="5" class="text-center text-secondary py-4">No registered models.</td></tr>{% endfor %}</tbody></table></div>
+  <div class="card-footer text-end"><button class="btn btn-primary"{% if not enabled %} disabled{% endif %}><i class="ti ti-plant me-1"></i>Generate</button></div>
+</form>
+<div class="card"><div class="card-header"><h3 class="card-title">Seeded batches</h3>
+  {% if batches %}<form method="post" class="ms-auto">{% csrf_token %}<input type="hidden" name="action" value="purge">
+    <button class="btn btn-outline-danger btn-sm"{% if not enabled %} disabled{% endif %}>Remove all seeded data</button></form>{% endif %}</div>
+  <div class="table-responsive"><table class="table card-table"><thead><tr><th>Batch</th><th>Created</th><th class="text-end">Rows</th><th></th></tr></thead><tbody>
+  {% for b in batches %}<tr><td><code>{{ b.batch }}</code></td><td>{{ b.at|date:"DATETIME_FORMAT" }}</td><td class="text-end">{{ b.rows }}</td>
+    <td class="text-end"><form method="post" class="d-inline">{% csrf_token %}<input type="hidden" name="action" value="purge"><input type="hidden" name="batch" value="{{ b.batch }}">
+      <button class="btn btn-sm btn-outline-danger"{% if not enabled %} disabled{% endif %}>Remove</button></form></td></tr>
+  {% empty %}<tr><td colspan="4" class="text-center text-secondary py-4">Nothing seeded yet.</td></tr>{% endfor %}</tbody></table></div></div>
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends "core/mail/base_mail.html" %}
+{% block mail %}
+<div class="card mb-3"><div class="card-header"><h3 class="card-title">Filters</h3></div>
+  <div class="list-group list-group-flush">
+  {% for f in filters %}<div class="list-group-item d-flex flex-wrap gap-2 align-items-center">
+    <div class="me-auto"><a href="{% url 'core:mail_filter' f.pk %}" class="fw-bold">{{ f.name }}</a>{% if not f.is_active %} <span class="badge bg-secondary-lt">off</span>{% endif %}
+      <div class="small text-secondary">
+        {% if f.subject_contains %}subject has “{{ f.subject_contains }}” · {% endif %}{% if f.body_contains %}text has “{{ f.body_contains }}” · {% endif %}{% if f.from_system %}from the system · {% endif %}
+        → {% if f.label %}label {{ f.label.name }} {% endif %}{% if f.mark_read %}mark read {% endif %}{% if f.star %}star {% endif %}{% if f.skip_inbox %}skip inbox{% endif %}</div></div>
+    <form method="post" action="{% url 'core:mail_filter' f.pk %}" class="d-flex gap-2">{% csrf_token %}
+      <button class="btn btn-sm" name="action" value="apply">Apply now</button>
+      <button class="btn btn-sm btn-outline-danger" name="action" value="delete">Delete</button></form></div>
+  {% empty %}<div class="list-group-item text-secondary">No filters yet. A filter files incoming mail for you, e.g. everything from the system with “Approved” in the subject gets the label “Approvals” and skips the inbox.</div>{% endfor %}
+  </div></div>
+
+<form method="post" action="{% if editing %}{% url 'core:mail_filter' editing.pk %}{% else %}{% url 'core:mail_filters' %}{% endif %}" class="card">{% csrf_token %}
+  <div class="card-header"><h3 class="card-title">{% if editing %}Edit “{{ editing.name }}”{% else %}New filter{% endif %}</h3></div>
+  <div class="card-body">
+    {% for e in form.non_field_errors %}<div class="alert alert-danger">{{ e }}</div>{% endfor %}
+    <div class="mb-3"><label class="form-label required" for="{{ form.name.id_for_label }}">Name</label>{{ form.name }}{% for e in form.name.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}</div>
+    <div class="row g-3"><div class="col-lg-6"><h4>When a message matches</h4>
+      <div class="mb-3"><label class="form-label" for="{{ form.from_users.id_for_label }}">From</label>{{ form.from_users }}</div>
+      <label class="form-check mb-3">{{ form.from_system }}<span class="form-check-label">From the system (rules, approvals)</span></label>
+      <div class="mb-3"><label class="form-label" for="{{ form.subject_contains.id_for_label }}">Subject contains</label>{{ form.subject_contains }}</div>
+      <div class="mb-3"><label class="form-label" for="{{ form.body_contains.id_for_label }}">Text contains</label>{{ form.body_contains }}</div></div>
+    <div class="col-lg-6"><h4>Do this</h4>
+      <div class="mb-3"><label class="form-label" for="{{ form.label.id_for_label }}">Apply label</label>{{ form.label }}
+        {% if not mail_labels %}<div class="form-hint">Create labels on the <a href="{% url 'core:mail_labels' %}">Labels</a> page first.</div>{% endif %}</div>
+      <label class="form-check">{{ form.mark_read }}<span class="form-check-label">Mark as read</span></label>
+      <label class="form-check">{{ form.star }}<span class="form-check-label">Star it</span></label>
+      <label class="form-check">{{ form.skip_inbox }}<span class="form-check-label">Skip the inbox (archive)</span></label>
+      <label class="form-check mt-3">{{ form.is_active }}<span class="form-check-label">Active</span></label></div></div>
+  </div>
+  <div class="card-footer d-flex gap-2"><button class="btn btn-primary">Save filter</button>{% if editing %}<a class="btn" href="{% url 'core:mail_filters' %}">Cancel</a>{% endif %}</div>
+</form>
+{% endblock %}

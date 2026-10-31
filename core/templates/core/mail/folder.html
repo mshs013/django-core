@@ -1,0 +1,37 @@
+{% extends "core/mail/base_mail.html" %}
+{% block mail %}
+<form method="get" class="mb-3 d-flex gap-2"><input type="search" name="q" value="{{ q }}" class="form-control" placeholder="Search {{ title|lower }}…" maxlength="100">
+  <button class="btn">Search</button>{% if q %}<a class="btn btn-link" href="?">Clear</a>{% endif %}</form>
+<form method="post" class="card">{% csrf_token %}
+  <div class="card-header d-flex flex-wrap gap-2 align-items-center">
+    <h3 class="card-title me-auto">{% if label %}<span class="badge bg-{{ label.color }} me-1 p-1"></span>{% endif %}{{ title }}</h3>
+    {% if folder == "trash" %}
+      <button class="btn btn-sm" name="action" value="restore">Restore</button>
+      <button class="btn btn-sm btn-outline-danger" name="action" value="delete">Delete forever</button>
+    {% else %}
+      <button class="btn btn-sm" name="action" value="read">Mark read</button>
+      <button class="btn btn-sm" name="action" value="unread">Mark unread</button>
+      <button class="btn btn-sm" name="action" value="star">Star</button>
+      {% if folder == "inbox" %}<button class="btn btn-sm" name="action" value="archive">Archive</button>{% else %}<button class="btn btn-sm" name="action" value="inbox">Move to inbox</button>{% endif %}
+      {% if mail_labels %}<div class="input-group input-group-sm w-auto"><select name="label" class="form-select form-select-sm" aria-label="Label">{% for l in mail_labels %}<option value="{{ l.pk }}">{{ l.name }}</option>{% endfor %}</select>
+        <button class="btn btn-sm" name="action" value="label">Add label</button>{% if label %}<button class="btn btn-sm" name="action" value="unlabel">Remove label</button>{% endif %}</div>{% endif %}
+      <button class="btn btn-sm btn-outline-danger" name="action" value="trash">Trash</button>
+    {% endif %}
+  </div>
+  <div class="table-responsive"><table class="table card-table table-vcenter table-hover">
+    <tbody>
+    {% for c in page.object_list %}{% with m=c.message %}
+    <tr class="{% if not c.is_read %}fw-bold{% endif %}">
+      <td class="w-1"><input type="checkbox" class="form-check-input" name="ids" value="{{ c.pk }}" aria-label="Select"></td>
+      <td class="w-1">{% if c.is_starred %}<i class="ti ti-star-filled text-yellow"></i>{% else %}<i class="ti ti-star text-secondary"></i>{% endif %}</td>
+      <td class="text-nowrap" style="max-width:14rem"><a class="text-reset" href="{% url 'core:mail_thread' c.pk %}">{% if c.role == "from" %}To: {{ m.copies.all|length|add:"-1" }} recipient{{ m.copies.all|length|add:"-1"|pluralize }}{% else %}{{ m.sender_name|default:"System" }}{% endif %}</a>{% if m.company %}<span class="badge bg-secondary-lt fw-normal ms-1" title="From {{ m.company.name }}">{{ m.company.abbreviation }}</span>{% endif %}</td>
+      <td><a class="text-reset d-block text-truncate" style="max-width:40rem" href="{% url 'core:mail_thread' c.pk %}">
+        {% for l in c.labels.all %}<span class="badge bg-{{ l.color }}-lt me-1">{{ l.name }}</span>{% endfor %}
+        {{ m.subject|default:"(no subject)" }} <span class="text-secondary fw-normal">— {{ m.body|truncatechars:90 }}</span></a></td>
+      <td class="w-1 text-nowrap text-secondary small">{% if m.attachments.all %}<i class="ti ti-paperclip"></i> {% endif %}{{ m.created_at|date:"M d, H:i" }}</td>
+    </tr>{% endwith %}
+    {% empty %}<tr><td class="text-center text-secondary py-5">{% if q %}No messages match “{{ q }}”.{% else %}Nothing here.{% endif %}</td></tr>{% endfor %}
+    </tbody></table></div>
+  <div class="card-footer d-flex align-items-center">{% include "core/_pager.html" %}</div>
+</form>
+{% endblock %}

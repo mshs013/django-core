@@ -1,0 +1,2 @@
+{# PDF / Excel of this one record (resource_record_export). ``exports`` = the formats offered now (core.reports.resources.record). #}
+{% for ext in exports %}<a class="btn btn-sm btn-outline-primary" href="{% url 'core:resource_record_export' cfg.slug obj.pk ext %}" download>{% if ext == "pdf" %}<i class="ti ti-file-type-pdf me-1"></i>PDF{% else %}<i class="ti ti-file-spreadsheet me-1"></i>Excel{% endif %}</a>{% endfor %}

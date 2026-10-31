@@ -1,0 +1,40 @@
+{# One condition on one row: field · function · operator · value(s). ``v`` is the Alpine expression holding it, e.g. "it" or "c.where". #}
+<div class="qb-leaf d-flex gap-1 flex-wrap align-items-center flex-fill">
+  <select class="form-select form-select-sm qb-field" aria-label="Field" x-init="fillFields($el)" x-model="{{ v }}.path" @change="resetLeaf({{ v }})"></select>
+  <select class="form-select form-select-sm w-auto" aria-label="Function" x-show="filterFnsFor(kindOf({{ v }}.path)).length" x-model="{{ v }}.fn" @change="resetOp({{ v }})">
+    <option value="">value</option>
+    <template x-for="k in filterFnsFor(kindOf({{ v }}.path))" :key="k"><option :value="k" x-text="O.functions[k].label" :selected="{{ v }}.fn === k"></option></template>
+  </select>
+  <select class="form-select form-select-sm w-auto" aria-label="Operator" x-model="{{ v }}.op" @change="resetValue({{ v }})">
+    <template x-for="op in opsFor(leafKind({{ v }}))" :key="op"><option :value="op" x-text="O.operatorLabels[op]" :selected="{{ v }}.op === op"></option></template>
+  </select>
+  <div class="qb-value d-flex gap-1 align-items-center flex-fill">
+    <template x-if="shape({{ v }}) === 'one' && leafKind({{ v }}) === 'choice'">
+      <select class="form-select form-select-sm" x-model="{{ v }}.value" aria-label="Value"><option value="">—</option>
+        <template x-for="ch in choicesOf({{ v }}.path)" :key="ch[0]"><option :value="ch[0]" x-text="ch[1]" :selected="String({{ v }}.value) === ch[0]"></option></template></select>
+    </template>
+    <template x-if="shape({{ v }}) === 'one' && leafKind({{ v }}) === 'bool'">
+      <select class="form-select form-select-sm" x-model="{{ v }}.value" aria-label="Value"><option value="">—</option><option value="true">Yes</option><option value="false">No</option></select>
+    </template>
+    <template x-if="shape({{ v }}) === 'one' && !['choice', 'bool'].includes(leafKind({{ v }}))">
+      <input class="form-control form-control-sm" :type="inputType(leafKind({{ v }}))" x-model="{{ v }}.value" aria-label="Value" step="any">
+    </template>
+    <template x-if="shape({{ v }}) === 'two'">
+      <div class="d-flex gap-1 align-items-center">
+        <input class="form-control form-control-sm" :type="inputType(leafKind({{ v }}))" x-model="{{ v }}.value[0]" aria-label="From" step="any">
+        <span class="text-secondary small">and</span>
+        <input class="form-control form-control-sm" :type="inputType(leafKind({{ v }}))" x-model="{{ v }}.value[1]" aria-label="To" step="any">
+      </div>
+    </template>
+    <template x-if="shape({{ v }}) === 'list' && leafKind({{ v }}) === 'choice'">
+      <select class="form-select form-select-sm" multiple size="2" x-model="{{ v }}.value" aria-label="Values">
+        <template x-for="ch in choicesOf({{ v }}.path)" :key="ch[0]"><option :value="ch[0]" x-text="ch[1]"></option></template></select>
+    </template>
+    <template x-if="shape({{ v }}) === 'list' && leafKind({{ v }}) !== 'choice'">
+      <input class="form-control form-control-sm" x-model="{{ v }}.value" placeholder="1, 2, 3" aria-label="Values separated by commas">
+    </template>
+    <template x-if="shape({{ v }}) === 'period'">
+      <input class="form-control form-control-sm" type="number" min="1" x-model="{{ v }}.value" aria-label="How many" style="max-width:6rem">
+    </template>
+  </div>
+</div>

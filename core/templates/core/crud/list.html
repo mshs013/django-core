@@ -1,0 +1,30 @@
+{% extends "core/base.html" %}
+{% block title %}{{ cfg.label_plural }}{% endblock %}
+{% block heading %}{{ cfg.label_plural }}{% if trash %} · Trash{% endif %}{% endblock %}
+{% block actions %}
+  {% if has_trash and not trash %}<a class="btn" href="{% url 'core:resource_trash' cfg.slug %}">Trash</a>{% endif %}
+  {% if trash %}<a class="btn" href="{% url 'core:resource_list' cfg.slug %}">Back</a>{% endif %}
+  <div class="dropdown d-inline-block"><a class="btn dropdown-toggle" data-bs-toggle="dropdown"{% if scope.enabled %} data-bs-auto-close="outside"{% endif %}>Export</a><div class="dropdown-menu">
+    {% if scope.enabled %}{# the company choice travels in the query string, next to the list's own search parameters #}
+    <form method="get" class="px-3 py-2 core-export-form" style="min-width:16rem">
+      {% for key, values in request.GET.lists %}{% if key != "company_scope" and key != "companies" %}{% for v in values %}<input type="hidden" name="{{ key }}" value="{{ v }}">{% endfor %}{% endif %}{% endfor %}
+      {% include "core/reports/_company_scope.html" with scope_class="mb-2" %}
+      <div class="d-flex flex-wrap gap-1">{% for ext in export_formats %}<button class="btn btn-sm" formaction="{% url 'core:resource_export' cfg.slug ext %}">{{ ext|upper }}</button>{% endfor %}</div>
+    </form>
+    {% else %}{% for ext in export_formats %}<a class="dropdown-item" href="{% url 'core:resource_export' cfg.slug ext %}?{{ request.GET.urlencode }}">{{ ext|upper }}</a>{% endfor %}{% endif %}</div></div>
+  {% if report_sources and not trash %}<div class="dropdown d-inline-block"><a class="btn dropdown-toggle" data-bs-toggle="dropdown"><i class="ti ti-report me-1"></i>Reports</a>
+    <div class="dropdown-menu dropdown-menu-end">
+      {% if standard_reports %}<h6 class="dropdown-header">Standard reports</h6>
+      {% for d in standard_reports %}<a class="dropdown-item" href="{% url 'core:report_builder' d.source_key %}?def={{ d.pk }}&amp;next={{ request.get_full_path|urlencode }}">{{ d.name }}</a>{% endfor %}{% endif %}
+      {% if my_reports %}{% if standard_reports %}<div class="dropdown-divider"></div>{% endif %}<h6 class="dropdown-header">My &amp; shared reports</h6>
+      {% for d in my_reports %}<a class="dropdown-item" href="{% url 'core:report_builder' d.source_key %}?def={{ d.pk }}&amp;next={{ request.get_full_path|urlencode }}">{{ d.name }}</a>{% endfor %}{% endif %}
+      {% if standard_reports or my_reports %}<div class="dropdown-divider"></div>{% endif %}
+      {% for s in report_sources %}<a class="dropdown-item" href="{% url 'core:report_builder' s.key %}?next={{ request.get_full_path|urlencode }}"><i class="ti ti-plus me-1"></i>New report{% if report_sources|length > 1 %}: {{ s.label }}{% endif %}</a>{% endfor %}
+    </div></div>{% endif %}
+  {% if can_import %}<a class="btn" href="{% url 'core:resource_import' cfg.slug %}">Import</a>{% endif %}
+  {% if can_add and not trash %}<button type="button" class="btn btn-primary" hx-get="{% url 'core:resource_new' cfg.slug %}" hx-target="#core-modal-content" hx-swap="innerHTML"><i class="ti ti-plus me-1"></i>New {{ cfg.label|lower }}</button>{% endif %}
+{% endblock %}
+{% block content %}
+  {% include "core/search/_bar.html" with hx_target="resource-table" %}
+  <div id="resource-table" data-core-refresh>{% include "core/crud/_table.html" %}</div>
+{% endblock %}
