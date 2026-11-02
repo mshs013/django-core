@@ -1,0 +1,13 @@
+{% extends "core/base.html" %}{% block title %}Archive{% endblock %}{% block heading %}Archive{% endblock %}
+{% block content %}
+{% if can_run %}<form method="get" class="card mb-3"><div class="card-body row g-2 align-items-end">
+  <div class="col-md-4"><label class="form-label">Table</label>{{ form.table }}</div><div class="col-md-3"><label class="form-label">Older than (days)</label>{{ form.older_than_days }}</div>
+  <div class="col-auto"><button class="btn" name="preview" value="1">Preview</button></div></div></form>
+{% if preview.ok %}<form method="post" class="card mb-3"><div class="card-body">{% csrf_token %}{% if preview.ok %}<p>{{ preview.matched }} row(s) older than {{ preview.cutoff|date:"DATE_FORMAT" }} by <code>{{ preview.column }}</code>; {{ preview.blocked }} blocked by references; <strong>{{ preview.movable }}</strong> will move.</p>{% else %}<div class="alert alert-warning">{{ preview.reason }}</div>{% endif %}
+  <input type="hidden" name="table" value="{{ form.table.value }}"><input type="hidden" name="older_than_days" value="{{ form.older_than_days.value }}">
+  <label class="form-check"><input class="form-check-input" type="checkbox" name="confirm" value="1" required><span class="form-check-label">I understand matching rows are moved out of the database (verified first) and can be restored from the archive.</span></label>
+  <button class="btn btn-danger mt-2">Run archive</button></div></form>{% endif %}{% if preview and not preview.ok %}<div class="alert alert-warning">{{ preview.reason }}</div>{% endif %}{% endif %}
+<div class="card"><div class="table-responsive"><table class="table card-table"><thead><tr><th>Created</th><th>Kind</th><th>Table</th><th>Status</th><th>Moved</th><th>Blocked</th><th></th></tr></thead><tbody>
+{% for j in jobs %}<tr><td>{{ j.created_at|date:"DATETIME_FORMAT" }}</td><td>{{ j.get_kind_display }}</td><td>{{ j.table }}</td><td>{{ j.get_status_display }}{% if j.error %}<div class="small text-danger">{{ j.error|truncatechars:120 }}</div>{% endif %}</td><td>{{ j.processed_rows }}</td><td>{{ j.blocked_rows }}</td>
+<td class="text-end">{% if can_restore and j.kind == "archive" and j.status == "done" %}<form method="post" action="{% url 'core:archive_action' j.pk 'restore' %}">{% csrf_token %}<button class="btn btn-sm">Restore</button></form>{% endif %}</td></tr>
+{% empty %}<tr><td colspan="7" class="text-center text-secondary py-4">No archive jobs.</td></tr>{% endfor %}</tbody></table></div></div>{% endblock %}

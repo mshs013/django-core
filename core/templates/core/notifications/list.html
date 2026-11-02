@@ -1,0 +1,8 @@
+{% extends "core/base.html" %}{% block title %}Notifications{% endblock %}{% block heading %}Notifications{% endblock %}
+{% block actions %}<form method="post">{% csrf_token %}<button name="action" value="mark_all" class="btn">Mark all read</button></form>{% endblock %}
+{% block content %}{% include "core/search/_bar.html" %}
+<div class="card"><div class="list-group list-group-flush">
+{% for n in page.object_list %}<a class="list-group-item list-group-item-action {% if not n.is_read %}fw-bold{% endif %}" href="{% url 'core:notification_open' n.pk %}">
+  {% if n.company %}<span class="badge bg-secondary-lt fw-normal me-1" title="From {{ n.company.name }}">{{ n.company.abbreviation }}</span>{% endif %}{{ n.title }} <span class="text-secondary small float-end">{{ n.created_at|date:"DATETIME_FORMAT" }}</span><div class="small text-secondary">{{ n.body }}</div></a>
+{% empty %}<div class="p-4 text-center text-secondary">Nothing yet.</div>{% endfor %}</div>
+<div class="card-footer d-flex">{% include "core/_pager.html" %}</div></div>{% endblock %}

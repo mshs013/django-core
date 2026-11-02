@@ -1,0 +1,8 @@
+<form method="post" action="{{ action }}" hx-post="{{ action }}" hx-target="#core-modal-content" hx-swap="innerHTML">{% csrf_token %}
+  <div class="modal-header"><h5 class="modal-title">Delete {{ cfg.label|lower }}?</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+  <div class="modal-body">
+    {% if error %}<div class="alert alert-danger" role="alert">{{ error }}</div>{% endif %}
+    <p class="mb-0"><strong>{{ obj }}</strong><br>{% if soft %}This moves the record to the trash; it can be restored later.{% else %}This permanently removes the record and cannot be undone.{% endif %}</p>
+  </div>
+  <div class="modal-footer"><button type="button" class="btn me-auto" data-bs-dismiss="modal">{% if error %}Close{% else %}Cancel{% endif %}</button>{% if not error %}<button class="btn btn-danger" type="submit">Delete</button>{% endif %}</div>
+</form>

@@ -1,0 +1,26 @@
+{# theme toggle + mail + notifications + user menu + company switcher (right-most); used in the top bar (desktop) and the sidebar header (mobile) #}
+<div class="nav-item"><button type="button" class="nav-link px-1 btn btn-link border-0" data-theme-toggle aria-label="Toggle light/dark theme" title="Toggle theme"><i class="ti ti-sun fs-2" data-theme-icon></i></button></div>
+{% if core_can_mail %}<div class="nav-item"><a href="{% url 'core:mail_inbox' %}" class="nav-link px-1 position-relative" aria-label="Mail" title="Mail"><i class="ti ti-mail fs-2"></i>{% include "core/mail/_badge.html" %}</a></div>{% endif %}
+{% if core_can_notify %}<div class="nav-item dropdown">
+  <a href="#" class="nav-link px-1 position-relative" data-bs-toggle="dropdown" aria-label="Notifications" hx-get="{% url 'core:notification_dropdown' %}" hx-target="next .note-menu" hx-trigger="click"><i class="ti ti-bell fs-2"></i>{% include "core/notifications/_badge.html" %}</a>
+  <div class="dropdown-menu dropdown-menu-end dropdown-menu-card note-menu" style="min-width:20rem"><div class="p-3 text-secondary">Loading…</div></div>
+</div>{% endif %}
+<div class="nav-item dropdown">
+  <a href="#" class="nav-link d-flex lh-1 p-0 px-2" data-bs-toggle="dropdown" aria-label="Account">{% if user.profile.user_img %}<img class="avatar avatar-sm" src="{% url 'core:user_file' user.pk 'user_img' %}" alt="">{% else %}<span class="avatar avatar-sm"><i class="ti ti-user"></i></span>{% endif %}
+    <div class="d-none d-xl-block ps-2"><div>{{ user.full_name|default:user.email }}</div>{% if user.is_superuser %}<div class="mt-1 small text-secondary">Superuser</div>{% endif %}</div></a>
+  <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+    <a class="dropdown-item" href="{% url 'core:profile' %}">Profile</a>
+    <a class="dropdown-item" href="{% url 'core:password_change' %}">Change password</a>
+    <div class="dropdown-divider"></div>
+    <form method="post" action="{% url 'core:logout' %}">{% csrf_token %}<button class="dropdown-item" type="submit">Sign out</button></form>
+  </div>
+</div>
+{% if core_companies|length > 1 and not compact %}{# the switcher appears only for users assigned to more than one company #}
+<div class="nav-item dropdown core-company-switch">
+  <button type="button" class="btn btn-sm" data-bs-toggle="dropdown" aria-expanded="false" title="Change company: {{ core_active_company.name|default:'none' }}">
+    <i class="ti ti-switch-horizontal me-1"></i>{{ core_active_company.abbreviation|default:"Company" }}</button>
+  <form method="post" action="{% url 'core:switch_company' %}" class="dropdown-menu dropdown-menu-end">{% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}">
+    <h6 class="dropdown-header">Change company</h6>
+    {% for c in core_companies %}<button type="submit" name="company" value="{{ c.pk }}" class="dropdown-item d-flex justify-content-between gap-3{% if c.pk == core_active_company_id %} active{% endif %}"><span>{{ c.name }}</span><span class="text-secondary">{{ c.abbreviation }}</span></button>{% endfor %}
+  </form>
+</div>{% endif %}

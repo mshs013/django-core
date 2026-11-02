@@ -1,0 +1,5 @@
+{% extends "core/base.html" %}{% block title %}Exports{% endblock %}{% block heading %}My exports{% endblock %}
+{% block content %}<div class="card"><div class="table-responsive"><table class="table card-table"><thead><tr><th>Target</th><th>Format</th><th>Status</th><th>Requested</th><th></th></tr></thead><tbody>
+{% for j in jobs %}<tr><td>{{ j.target_key }}</td><td>{{ j.export_format|upper }}</td><td>{{ j.get_status_display }}{% if j.error %} <span class="text-danger small">{{ j.error }}</span>{% endif %}</td><td>{{ j.created_at|date:"DATETIME_FORMAT" }}</td>
+<td>{% if j.status == "done" and not j.is_expired %}<a class="btn btn-sm" href="{% url 'core:export_download' j.pk %}">Download</a>{% elif j.is_expired %}expired{% endif %}</td></tr>
+{% empty %}<tr><td colspan="5" class="text-center text-secondary py-4">No exports.</td></tr>{% endfor %}</tbody></table></div></div>{% endblock %}

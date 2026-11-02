@@ -1,0 +1,29 @@
+{% extends "core/base.html" %}{% load core_tags %}{% block title %}{{ report.label }}{% endblock %}{% block heading %}{{ report.label }}{% endblock %}
+{% block content %}<div class="row row-cards">
+<div class="col-md-3"><div class="card"><div class="card-header"><h3 class="card-title">Parameters</h3></div><div class="card-body">
+{% if report.description %}<p class="text-secondary">{{ report.description }}</p>{% endif %}
+<form method="get">
+  {% if form %}{% for e in form.non_field_errors %}<div class="alert alert-danger">{{ e }}</div>{% endfor %}
+  {% for field in form %}{% include "core/_field.html" %}{% endfor %}{% endif %}
+  {% include "core/reports/_company_scope.html" with scope_class="mb-3" %}
+  <div class="d-flex flex-wrap gap-2">
+    <button class="btn btn-primary" name="run" value="1">Run</button>
+    {% for f in formats %}<button class="btn" name="format" value="{{ f }}">{{ f|upper }}</button>{% endfor %}
+  </div>
+</form>
+<a class="d-block mt-3" href="{% url 'core:report_list' %}">&larr; All reports</a>
+</div></div></div>
+<div class="col-md-9"><div class="card"><div class="card-header"><h3 class="card-title">{% if output.title %}{{ output.title }}{% else %}Preview{% endif %}</h3></div><div class="card-body">
+{% if error %}<div class="alert alert-danger">{{ error }}</div>
+{% elif ran %}
+  {% if output.notice %}<div class="alert alert-warning">{{ output.notice }}</div>{% endif %}
+  {% if output.subtitle %}<p class="text-secondary">{{ output.subtitle }}</p>{% endif %}
+  {% if output.info %}<dl class="row mb-3">{% for label, value in output.info %}<dt class="col-sm-2 text-secondary fw-normal">{{ label }}</dt><dd class="col-sm-2">{{ value|default_if_none:"" }}</dd>{% endfor %}</dl>{% endif %}
+  <div class="table-responsive"><table class="table table-sm"><thead><tr>{% for key, label in output.columns %}<th{% if key in output.numeric %} class="text-end"{% endif %}>{{ label }}</th>{% endfor %}</tr></thead>
+  <tbody>{% for row in rows %}<tr>{% for key, label in output.columns %}<td{% if key in output.numeric %} class="text-end"{% endif %}>{{ row|get_item:key|default_if_none:"" }}</td>{% endfor %}</tr>{% empty %}<tr><td class="text-secondary text-center" colspan="{{ output.columns|length }}">No rows.</td></tr>{% endfor %}
+  {% if total and not page.has_next %}<tr class="fw-bold border-top border-dark">{% for key, label in output.columns %}<td{% if key in output.numeric %} class="text-end"{% endif %}>{{ total|get_item:key|default_if_none:"" }}</td>{% endfor %}</tr>{% endif %}</tbody></table></div>
+  {% for note in output.notes %}<p class="small mb-1">{{ note|linebreaksbr }}</p>{% endfor %}
+  <div class="d-flex mt-2">{% include "core/_pager.html" %}</div>
+{% else %}<div class="text-secondary">Fill in the parameters and press Run.</div>{% endif %}
+</div></div></div>
+</div>{% endblock %}

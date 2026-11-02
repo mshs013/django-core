@@ -1,0 +1,3 @@
+{% extends "core/base.html" %}{% block title %}Menu item{% endblock %}{% block heading %}{% if obj %}Edit{% else %}New{% endif %} menu item{% endblock %}
+{% block content %}<form method="post" class="card"><div class="card-body">{% csrf_token %}{{ form.non_field_errors }}
+{% for field in form %}{% include "core/_field.html" %}{% endfor %}<button class="btn btn-primary">Save</button> <a class="btn" href="{% url 'core:menu_list' %}">Cancel</a></div></form>{% endblock %}

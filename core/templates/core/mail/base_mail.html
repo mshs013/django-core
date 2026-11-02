@@ -1,0 +1,26 @@
+{% extends "core/base.html" %}
+{% block title %}{{ title }} · Mail{% endblock %}
+{% block heading %}Mail{% endblock %}
+{% block actions %}<a class="btn btn-primary" href="{% url 'core:mail_compose' %}"><i class="ti ti-pencil me-1"></i>Compose</a>{% endblock %}
+{% block content %}
+<div class="row g-3">
+  <div class="col-md-3 col-xl-2">
+    <div class="card"><div class="list-group list-group-flush">
+      {% for key, label in mail_folders.items %}
+      <a class="list-group-item list-group-item-action d-flex align-items-center {% if folder == key %}active{% endif %}" href="{% if key == 'inbox' %}{% url 'core:mail_inbox' %}{% else %}{% url 'core:mail_folder' key %}{% endif %}">
+        <i class="ti ti-{% if key == 'inbox' %}inbox{% elif key == 'starred' %}star{% elif key == 'sent' %}send{% elif key == 'trash' %}trash{% else %}mail{% endif %} me-2"></i>{{ label }}
+        {% if key == 'inbox' and mail_unread %}<span class="badge bg-primary text-white ms-auto">{{ mail_unread }}</span>{% endif %}</a>
+      {% endfor %}
+    </div></div>
+    <div class="card mt-3"><div class="card-header"><h3 class="card-title">Labels</h3>
+      <div class="card-actions"><a href="{% url 'core:mail_labels' %}" class="small">Manage</a></div></div>
+      <div class="list-group list-group-flush">
+      {% for l in mail_labels %}<a class="list-group-item list-group-item-action d-flex align-items-center {% if label.pk == l.pk %}active{% endif %}" href="{% url 'core:mail_label' l.pk %}">
+        <span class="badge bg-{{ l.color }} me-2 p-1"></span>{{ l.name }}{% if l.unread %}<span class="ms-auto small">{{ l.unread }}</span>{% endif %}</a>
+      {% empty %}<div class="p-3 small text-secondary">No labels yet.</div>{% endfor %}
+      <a class="list-group-item list-group-item-action small" href="{% url 'core:mail_filters' %}"><i class="ti ti-filter me-1"></i>Filters</a>
+    </div></div>
+  </div>
+  <div class="col-md-9 col-xl-10">{% block mail %}{% endblock %}</div>
+</div>
+{% endblock %}

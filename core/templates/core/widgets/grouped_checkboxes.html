@@ -1,0 +1,15 @@
+{# Checkboxes grouped under headings, each heading ticks/unticks its whole group; one filter box (core.crud.widgets.GroupedCheckboxList). #}
+<div class="core-checklist border rounded" x-data="{ q: '' }"{% if widget.attrs.id %} id="{{ widget.attrs.id }}"{% endif %}>
+  <input type="search" class="form-control form-control-sm border-0 border-bottom rounded-0" placeholder="Filter… (e.g. garment, add, core.add_user)" x-model="q" aria-label="Filter the options">
+  <div class="core-checklist-body p-2">
+    {% for group, options, index in widget.optgroups %}
+    <div class="core-check-group" data-group="{{ group|lower }}" x-show="!q || $el.textContent.toLowerCase().includes(q.toLowerCase())">
+      <label class="form-check mb-1 mt-1 fw-bold small"><input type="checkbox" class="form-check-input" aria-label="All of {{ group }}"{% if widget.attrs.disabled %} disabled{% endif %}
+        @change="$el.closest('.core-check-group').querySelectorAll('input[name]').forEach(function (b) { if (!b.disabled) { b.checked = $event.target.checked; } })"><span class="form-check-label">{{ group }}</span></label>
+      <div class="core-check-cols ps-4">
+        {% for option in options %}<label class="form-check mb-1" x-show="!q || $el.closest('.core-check-group').dataset.group.includes(q.toLowerCase()) || $el.textContent.toLowerCase().includes(q.toLowerCase())"><input type="checkbox" class="form-check-input" name="{{ option.name }}" value="{{ option.value }}" id="{{ option.attrs.id }}"{% if option.selected %} checked{% endif %}{% if widget.attrs.disabled %} disabled{% endif %}><span class="form-check-label">{{ option.label }}{% if option.code %} <code class="small text-secondary">{{ option.code }}</code>{% endif %}</span></label>{% endfor %}
+      </div>
+    </div>
+    {% empty %}<div class="text-secondary small">Nothing to choose from.</div>{% endfor %}
+  </div>
+</div>

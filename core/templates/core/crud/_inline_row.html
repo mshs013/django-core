@@ -1,0 +1,16 @@
+{% load core_tags %}{% comment %}One inline row: short fields side by side (each at least 10rem wide, wrapping when the modal is narrow), tick boxes
+as wide as their label, text areas (e.g. a step's "only when" condition) on a full-width line of their own below.{% endcomment %}
+<div class="inline-row border rounded p-2 mb-2">
+  <div class="row g-2 align-items-start">
+    {% for field in form.visible_fields %}{% if field.name != "DELETE" %}{% with t=field|widget_type %}<div class="{% if t == 'Textarea' %}col-12 order-last{% elif t == 'CheckboxInput' %}col-auto pt-md-4{% else %}col-md core-inline-col{% endif %}">{% include "core/_field.html" %}</div>{% endwith %}{% endif %}{% endfor %}
+    <div class="col-auto mb-3 pt-md-4 ms-auto">
+      <button type="button" class="btn btn-sm" data-inline-move="up" title="Move up">↑</button>
+      <button type="button" class="btn btn-sm" data-inline-move="down" title="Move down">↓</button>
+      {% if form.DELETE or not form.instance.pk %}<button type="button" class="btn btn-sm btn-outline-danger" data-inline-remove>Remove</button>{% endif %}
+    </div>
+  </div>
+  {% for field in form.hidden_fields %}{{ field }}{% endfor %}
+  {% if form.DELETE %}<span class="d-none">{{ form.DELETE }}</span>{% endif %}
+  {% for e in form.non_field_errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
+  {% for child in form.nested %}{% with node=child %}{% include "core/crud/_inline_formset.html" %}{% endwith %}{% endfor %}
+</div>

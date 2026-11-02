@@ -1,0 +1,15 @@
+{% load core_tags %}{% comment %}"Showing x to y of z entries" + First « 1 2 3 … » Last. Optional HTMX mode for result previews:
+  pager_mode="get"|"post", pager_url, pager_target, pager_include (the page number is sent as "page"){% endcomment %}{% if page.paginator.count %}
+<div class="core-pager d-flex align-items-center flex-wrap gap-2 flex-fill">
+  <div class="text-secondary small">Showing {{ page.start_index }} to {{ page.end_index }} of {{ page.paginator.count }} entries</div>
+  {% if page.paginator.num_pages > 1 %}
+  <ul class="pagination m-0 ms-auto">
+    {% with p=1 %}<li class="page-item{% if not page.has_previous %} disabled{% endif %}">{% include "core/_pager_link.html" with text="First" %}</li>{% endwith %}
+    {% if page.has_previous %}{% with p=page.previous_page_number %}<li class="page-item">{% include "core/_pager_link.html" with text="«" label="Previous" %}</li>{% endwith %}{% else %}<li class="page-item disabled"><span class="page-link">&laquo;</span></li>{% endif %}
+    {% for n in page|page_window %}{% if n %}{% with p=n %}
+    <li class="page-item{% if n == page.number %} active{% endif %}">{% include "core/_pager_link.html" with text=n %}</li>{% endwith %}{% else %}
+    <li class="page-item disabled"><span class="page-link">&hellip;</span></li>{% endif %}{% endfor %}
+    {% if page.has_next %}{% with p=page.next_page_number %}<li class="page-item">{% include "core/_pager_link.html" with text="»" label="Next" %}</li>{% endwith %}{% else %}<li class="page-item disabled"><span class="page-link">&raquo;</span></li>{% endif %}
+    {% with p=page.paginator.num_pages %}<li class="page-item{% if not page.has_next %} disabled{% endif %}">{% include "core/_pager_link.html" with text="Last" %}</li>{% endwith %}
+  </ul>{% endif %}
+</div>{% endif %}

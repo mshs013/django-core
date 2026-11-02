@@ -1,0 +1,22 @@
+{% extends "core/base.html" %}
+{% block title %}Import {{ cfg.label_plural }}{% endblock %}
+{% block heading %}Import {{ cfg.label_plural|lower }}{% endblock %}
+{% block content %}
+<div class="card"><div class="card-body">
+{% if errors %}<div class="alert alert-danger"><ul class="mb-0">{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul></div>{% endif %}
+{% if result %}
+  <h3>Preview (nothing is saved yet)</h3>
+  <p>{{ result.total_rows }} row{{ result.total_rows|pluralize }} checked.</p>
+  {% for row in result.valid_rows %}{% if forloop.counter0 < 20 %}<div class="small">{{ row.import_type|capfirst }}: {{ row.object_repr }}</div>{% endif %}{% endfor %}
+  {% for row in result.invalid_rows %}<div class="text-danger small">Row {{ row.number }}: {{ row.error_dict }}</div>{% endfor %}
+  {% if token and not errors %}<form method="post">{% csrf_token %}<input type="hidden" name="token" value="{{ token }}"><button class="btn btn-primary">Confirm import</button></form>{% endif %}
+{% else %}
+  <form method="post" enctype="multipart/form-data">{% csrf_token %}
+    <div class="mb-3"><label class="form-label">Format</label><select name="format" class="form-select w-auto">{% for f in formats %}<option>{{ f }}</option>{% endfor %}</select></div>
+    <div class="mb-3"><label class="form-label">File ({% for f in formats %}{{ f }}{% if not forloop.last %}, {% endif %}{% endfor %})</label><input type="file" name="file" class="form-control" required></div>
+    <p class="text-secondary">Rows are validated first; you confirm before anything is written. Rows are always imported into your active company.</p>
+    <p class="text-secondary">Start from a template with the right columns: leave <code>id</code> empty to add a row, fill it in to update that record.
+      {% for f in template_formats %}<a class="btn btn-sm ms-1" href="{% url 'core:resource_import_template' cfg.slug f %}"><i class="ti ti-download me-1"></i>Template ({{ f }})</a>{% endfor %}</p>
+    <button class="btn btn-primary">Preview</button> <a class="btn" href="{% url 'core:resource_list' cfg.slug %}">Cancel</a></form>
+{% endif %}</div></div>
+{% endblock %}

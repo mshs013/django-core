@@ -1,0 +1,18 @@
+{% load core_tags %}<div data-modal-size="lg"></div>
+<div class="modal-header gap-2"><h5 class="modal-title">{{ obj }}{% if trashed %} <span class="badge bg-red-lt">deleted</span>{% endif %}</h5>
+  {# approval status + actions sit at the top right, just before the close button #}
+  {% if approval or exports %}<div class="ms-auto d-flex flex-wrap align-items-center justify-content-end gap-2 core-modal-approval">{% include "core/crud/_export_buttons.html" %}{% if approval %}{% include "core/approvals/_status_badge.html" with status=approval.status %}{% include "core/approvals/_actions.html" with panel=approval size="sm" %}{% endif %}</div>{% endif %}
+  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+<div class="modal-body">
+  <dl class="row mb-0">
+    {% for label, value, file_url, is_image in details %}<dt class="col-sm-4">{{ label }}</dt><dd class="col-sm-8">{% if file_url %}{% if is_image %}<img src="{{ file_url }}" alt="{{ label }}" class="rounded border" style="max-height:8rem;max-width:100%">{% else %}<a href="{{ file_url }}">Download</a>{% endif %}{% else %}{{ value|dash }}{% endif %}</dd>{% endfor %}
+  </dl>
+  {% for child in children %}<h4 class="mt-4">{{ child.inline.label_plural|default:child.inline.label }}</h4>
+  <div class="table-responsive"><table class="table table-sm"><thead><tr>{% for h in child.headers %}<th>{{ h }}</th>{% endfor %}</tr></thead>
+    <tbody>{% for r in child.items %}<tr>{% for c in r %}<td>{{ c|dash }}</td>{% endfor %}</tr>{% empty %}<tr><td class="text-secondary">None.</td></tr>{% endfor %}</tbody></table></div>{% endfor %}
+  {% include "core/crud/_signatures.html" %}
+</div>
+<div class="modal-footer"><button type="button" class="btn me-auto" data-bs-dismiss="modal">Close</button>
+  {% if can_delete %}<button type="button" class="btn btn-outline-danger" hx-get="{% url 'core:resource_delete' cfg.slug obj.pk %}" hx-target="#core-modal-content" hx-swap="innerHTML">Delete</button>{% endif %}
+  {% if can_change %}<button type="button" class="btn btn-primary" hx-get="{% url 'core:resource_edit' cfg.slug obj.pk %}" hx-target="#core-modal-content" hx-swap="innerHTML">Edit</button>{% endif %}
+</div>

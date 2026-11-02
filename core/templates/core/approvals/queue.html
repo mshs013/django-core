@@ -1,0 +1,47 @@
+{% extends "core/base.html" %}{% block title %}Approvals{% endblock %}{% block heading %}Awaiting my approval{% endblock %}
+{% block actions %}<a class="btn" href="{% url 'core:approval_mine' %}"><i class="ti ti-send me-1"></i>My requests</a>{% endblock %}
+{% block content %}
+{% comment %}One tab per approval type. Columns come from the type's "queue columns"; the Approval cell uses the current step's
+pass/fail labels, button text and (when the step offers it) an Observation choice.{% endcomment %}
+<div class="card">
+  {% if tabs %}
+  <div class="card-header">
+    <ul class="nav nav-tabs card-header-tabs">
+      {% for t in tabs %}<li class="nav-item"><a class="nav-link{% if active == t.type.pk|stringformat:'s' %} active{% endif %}" href="?type={{ t.type.pk }}">{{ t.type.name }} <span class="badge bg-secondary-lt ms-2">{{ t.rows|length }}</span></a></li>{% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+  {% for t in tabs %}{% if active == t.type.pk|stringformat:'s' %}
+  <div class="table-responsive">
+    <table class="table card-table table-vcenter">
+      <thead><tr><th class="w-1">#</th>{% for h in t.headers %}<th>{{ h }}</th>{% empty %}<th>Record</th>{% endfor %}<th>Created by</th><th>Created at</th><th>Approval</th><th class="w-1"></th></tr></thead>
+      <tbody>
+      {% for row in t.rows %}<tr>
+        <td>{{ forloop.counter }}</td>
+        {% for c in row.cells %}<td>{{ c }}</td>{% empty %}<td>{{ row.req.object_repr }}</td>{% endfor %}
+        <td>{{ row.created_by.full_name|default:row.created_by|default:"—" }}</td>
+        <td>{{ row.created_at|date:"d-M-Y" }}<div class="text-secondary small">{{ row.created_at|date:"h:i:s A" }}</div></td>
+        <td style="min-width:16rem">
+          <form method="post" action="{% url 'core:approval_detail' row.req.pk %}" class="d-flex gap-3 align-items-center">{% csrf_token %}
+            <input type="hidden" name="expected_sequence" value="{{ row.req.current_sequence }}">
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <div class="flex-fill">
+              <div class="small text-secondary mb-1">{{ row.ui.display_name }}</div>
+              <label class="form-check mb-1"><input class="form-check-input" type="radio" name="action" value="approve" checked><span class="form-check-label">{{ row.ui.pass_label }}</span></label>
+              {% if row.ui.allow_observation %}<label class="form-check mb-1"><input class="form-check-input" type="radio" name="action" value="observe"><span class="form-check-label">Observation</span></label>{% endif %}
+              <label class="form-check mb-1"><input class="form-check-input" type="radio" name="action" value="reject"><span class="form-check-label">{{ row.ui.fail_label }}</span></label>
+              <input type="text" name="comment" class="form-control form-control-sm" placeholder="Enter comments" maxlength="1000">
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">{{ row.ui.button_text }}</button>
+          </form>
+        </td>
+        <td>{% if row.url %}<button type="button" class="btn btn-sm btn-ghost-primary" hx-get="{{ row.url }}" hx-target="#core-modal-content" hx-swap="innerHTML" title="View record"><i class="ti ti-eye"></i></button>{% else %}<a class="btn btn-sm btn-ghost-primary" href="{% url 'core:approval_detail' row.req.pk %}" title="View request"><i class="ti ti-eye"></i></a>{% endif %}{% if row.can_add_step %}<a class="btn btn-sm btn-ghost-secondary" href="{% url 'core:approval_detail' row.req.pk %}#add-step" title="Add a step"><i class="ti ti-row-insert-bottom"></i></a>{% endif %}</td>
+      </tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}{% empty %}
+  <div class="card-body text-center text-secondary py-4">Nothing is waiting for you. Requests you sent yourself are under <a href="{% url 'core:approval_mine' %}">My requests</a>.</div>
+  {% endfor %}
+</div>
+{% endblock %}

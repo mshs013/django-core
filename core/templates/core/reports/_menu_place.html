@@ -1,0 +1,14 @@
+{% comment %}"Show in menu under" on the report / query builder Save form: only for people who may change the report (menu_groups is
+None otherwise). Groups = active menu groups the user can see, as an indented tree; checked again on the server (core.reports.menu).{% endcomment %}
+{% if menu_groups is not None %}<div class="w-100 border-top pt-2 mt-1">
+  <label class="form-label small mb-1" for="rb-menu-parent">Show in menu under</label>
+  <select id="rb-menu-parent" name="menu_parent" class="form-select form-select-sm mb-1">
+    <option value="">— Not in the menu —</option>
+    {% for g in menu_groups %}<option value="{{ g.pk }}" {% if saved.menu_parent_id == g.pk %}selected{% endif %}>{{ g.indent }}{{ g.path }}</option>{% endfor %}
+  </select>
+  {% if not menu_groups %}<div class="form-hint small mb-1">No menu group yet: create one (an item without URL name or path) in Menu builder.</div>{% endif %}
+  <div class="d-flex gap-1">
+    <input name="menu_label" class="form-control form-control-sm" maxlength="80" placeholder="Menu label (default: report name)" value="{{ saved.menu_label }}" aria-label="Menu label">
+    <input name="menu_position" type="number" min="0" max="32767" class="form-control form-control-sm" style="max-width: 5.5rem" value="{% if saved %}{{ saved.menu_position }}{% else %}100{% endif %}" title="Position in the group (lower = higher up)" aria-label="Menu position">
+  </div>
+</div>{% endif %}

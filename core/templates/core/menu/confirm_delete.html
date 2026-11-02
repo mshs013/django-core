@@ -1,0 +1,3 @@
+{% extends "core/base.html" %}{% block title %}Delete menu item{% endblock %}{% block heading %}Delete {{ obj.title }}?{% endblock %}
+{% block content %}<form method="post" class="card"><div class="card-body">{% csrf_token %}<p>This removes the item{% if children %} and its {{ children }} sub-item(s){% endif %}.</p>
+<button class="btn btn-danger">Delete</button> <a class="btn" href="{% url 'core:menu_list' %}">Cancel</a></div></form>{% endblock %}

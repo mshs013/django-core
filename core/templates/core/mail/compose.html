@@ -1,0 +1,19 @@
+{% extends "core/mail/base_mail.html" %}
+{% block mail %}
+<form method="post" enctype="multipart/form-data" class="card">{% csrf_token %}
+  <div class="card-header"><h3 class="card-title">New message</h3></div>
+  <div class="card-body">
+    {% for e in form.non_field_errors %}<div class="alert alert-danger">{{ e }}</div>{% endfor %}
+    <div class="row g-3">
+      <div class="col-md-4"><label class="form-label required" for="{{ form.to.id_for_label }}">To</label>{{ form.to }}{% for e in form.to.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}</div>
+      <div class="col-md-4"><label class="form-label" for="{{ form.cc.id_for_label }}">Cc</label>{{ form.cc }}</div>
+      <div class="col-md-4"><label class="form-label" for="{{ form.bcc.id_for_label }}">Bcc <span class="form-label-description">hidden from the others</span></label>{{ form.bcc }}</div>
+    </div>
+    <div class="form-hint mb-3">Hold Ctrl (⌘ on Mac) to pick several people.</div>
+    <div class="mb-3"><label class="form-label" for="{{ form.subject.id_for_label }}">Subject</label>{{ form.subject }}</div>
+    <div class="mb-3"><label class="form-label" for="{{ form.body.id_for_label }}">Message</label>{{ form.body }}{% for e in form.body.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}</div>
+    <div><label class="form-label">Attachments</label><input type="file" name="files" multiple class="form-control"></div>
+  </div>
+  <div class="card-footer d-flex gap-2"><button class="btn btn-primary"><i class="ti ti-send me-1"></i>Send</button><a class="btn" href="{% url 'core:mail_inbox' %}">Discard</a></div>
+</form>
+{% endblock %}

@@ -1,0 +1,9 @@
+{# Many-to-many as checkboxes in a scrollable box with a filter (core.crud.widgets.CheckboxList). #}
+<div class="core-checklist border rounded" x-data="{ q: '' }"{% if widget.attrs.id %} id="{{ widget.attrs.id }}"{% endif %}>
+  <input type="search" class="form-control form-control-sm border-0 border-bottom rounded-0" placeholder="Filter…" x-model="q" aria-label="Filter the options">
+  <div class="core-checklist-body p-2">
+    {% for group, options, index in widget.optgroups %}{% for option in options %}
+    <label class="form-check mb-1" x-show="!q || $el.textContent.toLowerCase().includes(q.toLowerCase())"><input type="checkbox" class="form-check-input" name="{{ option.name }}" value="{{ option.value }}" id="{{ option.attrs.id }}"{% if option.selected %} checked{% endif %}{% if widget.attrs.disabled %} disabled{% endif %}><span class="form-check-label">{{ option.label }}</span></label>
+    {% empty %}<div class="text-secondary small">Nothing to choose from.</div>{% endfor %}{% empty %}<div class="text-secondary small">Nothing to choose from.</div>{% endfor %}
+  </div>
+</div>

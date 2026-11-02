@@ -1,0 +1,19 @@
+{% extends "core/base.html" %}{% load core_tags %}
+{% block title %}{{ obj }}{% endblock %}
+{% block heading %}{{ obj }}{% if trashed %} <span class="badge bg-red-lt">deleted</span>{% endif %}{% endblock %}
+{% block actions %}
+  <a class="btn" href="{% url 'core:resource_list' cfg.slug %}">Back</a>
+  {% include "core/crud/_export_buttons.html" %}
+  {% if can_change %}<a class="btn btn-primary" href="{% url 'core:resource_edit' cfg.slug obj.pk %}">Edit</a>{% endif %}
+  {% if can_delete %}<a class="btn btn-outline-danger" href="{% url 'core:resource_delete' cfg.slug obj.pk %}">Delete</a>{% endif %}
+{% endblock %}
+{% block content %}
+<div class="card mb-3"><div class="card-body"><dl class="row mb-0">
+  {% for label, value, file_url, is_image in details %}<dt class="col-sm-3">{{ label }}</dt><dd class="col-sm-9">{% if file_url %}<a href="{{ file_url }}">Download</a>{% else %}{{ value|dash }}{% endif %}</dd>{% endfor %}
+</dl></div></div>
+{% for child in children %}<div class="card mb-3"><div class="card-header"><h3 class="card-title">{{ child.inline.label_plural|default:child.inline.label }}</h3></div>
+  <div class="table-responsive"><table class="table card-table"><thead><tr>{% for h in child.headers %}<th>{{ h }}</th>{% endfor %}</tr></thead>
+  <tbody>{% for r in child.items %}<tr>{% for c in r %}<td>{{ c|dash }}</td>{% endfor %}</tr>{% empty %}<tr><td class="text-secondary">None.</td></tr>{% endfor %}</tbody></table></div></div>{% endfor %}
+{% if signatures %}<div class="card mb-3"><div class="card-header"><h3 class="card-title">Approvals</h3></div><div class="card-body">{% include "core/crud/_signatures.html" with bare=1 %}</div></div>{% endif %}
+{% if approval %}{% include "core/approvals/_panel.html" with panel=approval %}{% endif %}
+{% endblock %}

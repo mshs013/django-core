@@ -1,0 +1,38 @@
+{% extends "core/base.html" %}
+{% block title %}Search builder{% endblock %}
+{% block heading %}Search builder{% endblock %}
+{% block content %}
+<div class="row g-3">
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-header"><h3 class="card-title">Standard searches</h3></div>
+      <div class="card-body text-secondary small pb-0">Searches built here appear in the <b>Saved searches</b> menu of their page for every user
+        who can open it. Users can run them and page through the results, but only a superuser can change or delete them.</div>
+      <div class="table-responsive"><table class="table table-vcenter card-table">
+        <thead><tr><th>Name</th><th>Page</th><th>Default</th><th></th></tr></thead>
+        <tbody>
+        {% for s in searches %}<tr>
+          <td>{{ s.obj.name }}{% if not s.valid %} <span class="badge bg-red-lt" title="A field it uses no longer exists">needs fixing</span>{% endif %}</td>
+          <td>{{ s.target.label }} <span class="text-secondary small">· {{ s.target.kind }}</span></td>
+          <td>{% if s.obj.is_default %}<span class="badge bg-green-lt">For everyone</span>{% endif %}</td>
+          <td class="text-end text-nowrap">
+            <a class="btn btn-sm" href="{{ s.open }}">Open</a>
+            <a class="btn btn-sm" href="{% url 'core:search_builder_edit' s.obj.target_type s.obj.target_key %}?id={{ s.obj.pk }}">Edit</a>
+            <form method="post" action="{% url 'core:search_action' s.obj.pk 'delete' %}" class="d-inline">{% csrf_token %}
+              <input type="hidden" name="next" value="{{ request.path }}"><button class="btn btn-sm btn-outline-danger">Delete</button></form>
+          </td></tr>
+        {% empty %}<tr><td colspan="4" class="text-secondary">No standard searches yet. Pick a page on the right to build one.</td></tr>{% endfor %}
+        </tbody></table></div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-header"><h3 class="card-title">New standard search</h3></div>
+      <div class="list-group list-group-flush core-checklist-body" style="max-height:32rem">
+        {% for t in targets %}<a class="list-group-item list-group-item-action d-flex justify-content-between" href="{% url 'core:search_builder_edit' t.type t.key %}">
+          <span>{{ t.label }}</span><span class="text-secondary small">{{ t.kind }}</span></a>{% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

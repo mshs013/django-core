@@ -1,0 +1,17 @@
+{% comment %}Fields + inline formsets of a create/edit form, in tabs when the resource (or its custom form) defines them. Expects form, nodes,
+form_tabs. The active tab is set by Alpine only (:class): a static "active" class would be merged in and never removed.{% endcomment %}
+{% if form_tabs.tabs|length > 1 %}
+<div x-data="{ tab: {{ form_tabs.active }} }">
+  <ul class="nav nav-tabs core-form-tabs mb-3" role="tablist">
+    {% for t in form_tabs.tabs %}<li class="nav-item" role="presentation"><a href="#" class="nav-link" role="tab" :class="tab === {{ forloop.counter0 }} ? 'active' : ''" @click.prevent="tab = {{ forloop.counter0 }}">{{ t.label }}{% if t.errors %}<span class="core-tab-error" title="Has errors"></span>{% endif %}</a></li>{% endfor %}
+  </ul>
+  {% for t in form_tabs.tabs %}<div role="tabpanel" x-show="tab === {{ forloop.counter0 }}"{% if forloop.counter0 != form_tabs.active %} x-cloak{% endif %}>
+    {% include "core/crud/_fields.html" with fields=t.fields %}
+    {% for node in t.nodes %}{% include "core/crud/_inline_formset.html" %}{% endfor %}
+  </div>{% endfor %}
+</div>
+{% else %}{% with t=form_tabs.tabs.0 %}
+  {% include "core/crud/_fields.html" with fields=t.fields %}
+  {% for node in t.nodes %}{% include "core/crud/_inline_formset.html" %}{% endfor %}
+{% endwith %}{% endif %}
+{% for field in form.hidden_fields %}{{ field }}{% endfor %}

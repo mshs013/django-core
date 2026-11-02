@@ -1,0 +1,34 @@
+{% extends "core/base.html" %}{% block title %}{{ req.object_repr }}{% endblock %}{% block heading %}{{ req.object_repr }} <span class="badge bg-blue-lt">{{ req.get_status_display }}</span>{% endblock %}
+{% block actions %}{% if target_url %}<a class="btn" href="{{ target_url }}">Open record</a>{% endif %}{% endblock %}
+{% block content %}
+<div class="card mb-3"><div class="card-header"><h3 class="card-title">{{ req.approval_type.name }} · round {{ req.round }}</h3></div>
+<ul class="list-group list-group-flush">{% for s in chain %}<li class="list-group-item d-flex justify-content-between">
+  <span>{{ s.name }}{% if s.kind == "extra" %} <span class="badge bg-azure-lt ms-1">added</span>{% endif %}</span>{% if s.sequence == req.current_sequence and req.status == "pending" %}<span class="badge bg-yellow-lt">current</span>{% endif %}</li>{% endfor %}</ul></div>
+{% if can_act %}<form method="post" class="card mb-3"><div class="card-body">{% csrf_token %}
+  <input type="hidden" name="expected_sequence" value="{{ req.current_sequence }}">
+  <textarea name="comment" class="form-control mb-2" placeholder="Comment (required for a rejection or an observation)" maxlength="1000"></textarea>
+  <button name="action" value="approve" class="btn btn-success">{{ ui.pass_label }}</button>{% if ui.allow_observation %} <button name="action" value="observe" class="btn btn-warning">Observation</button>{% endif %} <button name="action" value="reject" class="btn btn-danger">{{ ui.fail_label }}</button></div></form>{% endif %}
+{% if can_add_step %}{% comment %}Add a step to this one request: before the waiting step (it opens now) or after it. The approvers and the
+record's creator are mailed; a rejection at the added step returns the record to its creator.{% endcomment %}
+<form method="post" class="card mb-3" id="add-step">{% csrf_token %}
+  <div class="card-header"><h3 class="card-title">Add a step</h3></div>
+  <div class="card-body row g-3">
+    <input type="hidden" name="action" value="add_step"><input type="hidden" name="expected_sequence" value="{{ req.current_sequence }}">
+    <div class="col-md-6"><label class="form-label required" for="add-step-name">Step name</label>
+      <input id="add-step-name" name="name" class="form-control" maxlength="120" placeholder="e.g. Merchandiser check" required>
+      <label class="form-label mt-3">Where</label>
+      <label class="form-check"><input class="form-check-input" type="radio" name="position" value="before"{% if current.is_final %} checked{% endif %}><span class="form-check-label">Before &ldquo;{{ current.name }}&rdquo; <span class="text-secondary">(goes to the new approver now, then back to this step)</span></span></label>
+      <label class="form-check"><input class="form-check-input" type="radio" name="position" value="after"{% if current.is_final %} disabled{% else %} checked{% endif %}><span class="form-check-label">After &ldquo;{{ current.name }}&rdquo; <span class="text-secondary">{% if current.is_final %}(not possible after the final step){% else %}(once this step is passed){% endif %}</span></span></label>
+      <label class="form-label mt-3" for="add-step-comment">Comment</label>
+      <input id="add-step-comment" name="comment" class="form-control" maxlength="1000" placeholder="Why the extra step (sent in the mail)">
+    </div>
+    <div class="col-md-6"><label class="form-label required" for="add-step-approvers">Approver</label>
+      <select id="add-step-approvers" name="approvers" class="form-select" multiple size="7" required>{% for u in step_people %}<option value="{{ u.pk }}">{{ u.full_name|default:u.email }} &middot; {{ u.email }}</option>{% endfor %}</select>
+      <div class="form-hint">Ctrl/Cmd-click to pick more than one; any of them may decide.</div>
+    </div>
+  </div>
+  <div class="card-footer text-end"><button class="btn btn-primary">Add step</button></div>
+</form>{% endif %}
+<div class="card"><div class="card-header"><h3 class="card-title">History</h3></div><ul class="list-group list-group-flush">
+{% for h in history %}<li class="list-group-item"><strong>{{ h.get_action_display }}</strong>{% if h.step_name %} <span class="text-secondary">({{ h.step_name }})</span>{% endif %} · {{ h.actor|default:"system" }} · {{ h.created_at|date:"DATETIME_FORMAT" }}{% if h.comment %}<div class="text-secondary">{{ h.comment }}</div>{% endif %}</li>{% endfor %}</ul></div>
+{% endblock %}

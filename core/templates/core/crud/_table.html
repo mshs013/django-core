@@ -1,0 +1,23 @@
+{% load core_tags %}
+<form method="post">{% csrf_token %}
+<div class="card"><div class="table-responsive">
+<table class="table card-table table-vcenter table-hover">
+  <thead><tr>{% if bulk_actions %}<th class="w-1"></th>{% endif %}
+    {% for name, label, sortable in columns %}<th>{% if sortable %}<a href="?{% sort_url request name state.sort.0 %}" hx-get="?{% sort_url request name state.sort.0 %}" hx-target="#resource-table" hx-push-url="true">{{ label }}</a>{% else %}{{ label }}{% endif %}</th>{% endfor %}{% if approval_column %}<th>Approval</th>{% endif %}<th></th></tr></thead>
+  <tbody>
+  {% for row in rows %}<tr>
+    {% if bulk_actions %}<td><input type="checkbox" class="form-check-input" name="ids" value="{{ row.obj.pk }}"></td>{% endif %}
+    {% for cell in row.cells %}<td>{{ cell|dash }}</td>{% endfor %}
+    {% if approval_column %}<td>{% include "core/approvals/_status_badge.html" with status=row.approval %}</td>{% endif %}
+    <td class="text-end">
+      {% if trash %}<button class="btn btn-sm" formaction="{% url 'core:resource_restore' cfg.slug row.obj.pk %}">Restore</button>{% else %}
+      <button type="button" class="btn btn-sm" hx-get="{% url 'core:resource_detail' cfg.slug row.obj.pk %}" hx-target="#core-modal-content" hx-swap="innerHTML" title="View"><i class="ti ti-eye"></i></button>
+      {% if row.can_change %}<button type="button" class="btn btn-sm" hx-get="{% url 'core:resource_edit' cfg.slug row.obj.pk %}" hx-target="#core-modal-content" hx-swap="innerHTML">Edit</button>{% endif %}
+      {% if row.can_delete %}<button type="button" class="btn btn-sm btn-outline-danger" hx-get="{% url 'core:resource_delete' cfg.slug row.obj.pk %}" hx-target="#core-modal-content" hx-swap="innerHTML">Delete</button>{% endif %}{% endif %}
+    </td></tr>
+  {% empty %}<tr><td colspan="{{ columns|length|add:3 }}" class="text-center text-secondary py-4">Nothing here yet.</td></tr>{% endfor %}
+  </tbody></table></div>
+  <div class="card-footer d-flex align-items-center gap-2">
+    {% if bulk_actions and not trash %}<select name="action" class="form-select form-select-sm w-auto">{% for a in bulk_actions %}<option value="{{ a }}">{{ a|capfirst }} selected</option>{% endfor %}</select><button class="btn btn-sm">Apply</button>{% endif %}
+    {% include "core/_pager.html" %}</div>
+</div></form>

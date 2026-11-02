@@ -1,0 +1,46 @@
+{# quick search + Alpine advanced builder + saved searches. Expects: state, spec, builder_fields, operator_labels, saved_list, target_type, target_key, hx_target (optional) #}
+{% load core_tags %}{% with can_build=request.user|can_build_search %}
+<div class="card mb-3 search-bar" x-data="searchBuilder" data-fields="{{ builder_fields|json_attr }}" data-initial="{{ state.tree|json_attr }}">
+  <div class="card-body">
+    <form method="get" id="search-form" {% if hx_target %}hx-get="" hx-target="#{{ hx_target }}" hx-push-url="{{ hx_push|default:'true' }}"{% if hx_include %} hx-include="{{ hx_include }}"{% endif %}{% endif %} class="row g-2 align-items-start">
+      <div class="col-md"><input type="search" name="q" value="{{ state.quick }}" class="form-control" placeholder="Quick search…" maxlength="200"></div>
+      {% if can_build %}<input type="hidden" name="adv" :value="items.length ? json() : ''">{% endif %}
+      {% if state.saved_id %}<input type="hidden" name="saved" value="{{ state.saved_id }}">{% endif %}
+      <div class="col-auto"><button type="submit" class="btn btn-primary">Search</button>
+        {% if can_build %}<button type="button" class="btn" @click="add()">+ Filter</button>{% endif %}
+        <a class="btn btn-link" href="?nosaved=1">Clear</a></div>
+      {% if can_build %}<div class="col-12" x-show="items.length" x-cloak>
+        <div class="mb-2">Match <select x-model="op" class="form-select form-select-sm d-inline-block w-auto"><option>AND</option><option>OR</option></select> of:</div>
+        <template x-for="(it, i) in items" :key="i">
+          <div class="row g-2 mb-2">
+            <div class="col-md-3"><select class="form-select form-select-sm" x-model="it.field" @change="changeField(it)">
+              <template x-for="f in fields" :key="f.name"><option :value="f.name" x-text="f.label" :selected="f.name===it.field"></option></template></select></div>
+            <div class="col-md-2"><select class="form-select form-select-sm" x-model="it.op">
+              <template x-for="o in meta(it.field).operators" :key="o.value"><option :value="o.value" x-text="o.label" :selected="o.value===it.op"></option></template></select></div>
+            <div class="col-md">
+              <template x-if="it.op==='range'"><div class="input-group input-group-sm"><input class="form-control" x-model="it.value[0]" @focus="if(!Array.isArray(it.value)) it.value=['','']"><input class="form-control" x-model="it.value[1]"></div></template>
+              <template x-if="it.op!=='range' && it.op!=='isnull' && meta(it.field).choices.length"><select class="form-select form-select-sm" x-model="it.value">
+                <option value="">—</option><template x-for="c in meta(it.field).choices" :key="c.value"><option :value="c.value" x-text="c.label"></option></template></select></template>
+              <template x-if="it.op!=='range' && it.op!=='isnull' && !meta(it.field).choices.length"><input class="form-control form-control-sm" x-model="it.value" :type="meta(it.field).kind==='date'?'date':'text'"></template>
+            </div>
+            <div class="col-auto"><button type="button" class="btn btn-sm btn-outline-danger" @click="remove(i)">×</button></div>
+          </div>
+        </template>
+      </div>{% endif %}
+      {% if state.sort %}<input type="hidden" name="sort" value="{{ state.sort|join:',' }}">{% endif %}
+    </form>
+    {% for w in state.warnings %}<div class="text-warning small mt-2">{{ w }}</div>{% endfor %}
+    <div class="d-flex flex-wrap gap-2 mt-2 align-items-center">
+      {% include "core/search/_saved_dropdown.html" %}
+      {% if can_build %}<form method="post" action="{% url 'core:search_save' %}" class="d-flex flex-wrap gap-2 ms-auto align-items-center">{% csrf_token %}
+        <input type="hidden" name="target_type" value="{{ target_type }}"><input type="hidden" name="target_key" value="{{ target_key }}">
+        <input type="hidden" name="q" value="{{ state.quick }}"><input type="hidden" name="adv" :value="items.length ? json() : ''">
+        <input type="hidden" name="next" value="{{ request.path }}">
+        <input name="name" class="form-control form-control-sm" placeholder="Save this search as…" maxlength="150" required>
+        <select name="visibility" class="form-select form-select-sm w-auto"><option value="private">Private</option><option value="company">Company</option><option value="public">Public</option></select>
+        {% if request.user.is_superuser %}<label class="form-check form-check-inline mb-0" title="Offer this search to every user who can open this page, in every company">
+          <input class="form-check-input" type="checkbox" name="is_system" value="1"><span class="form-check-label small">Standard (all users)</span></label>{% endif %}
+        <button class="btn btn-sm">Save</button></form>{% endif %}
+    </div>
+  </div>
+</div>{% endwith %}

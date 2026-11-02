@@ -1,0 +1,9 @@
+{# Approval signature row under a record: Prepared By, then one box per approval step (views.crud.signature_boxes). #}
+{% load core_tags %}
+{% if signatures %}<div class="core-signatures{% if not bare %} mt-4 pt-3 border-top{% endif %}">
+  <div class="row g-3 text-center">{% for s in signatures %}<div class="col">
+    <div class="fw-bold small">{{ s.label }}</div>
+    <div class="core-signature-img">{% if s.image %}<img src="{{ s.image }}" alt="Signature of {{ s.name }}">{% endif %}</div>
+    {% if s.name %}<div class="small">{{ s.name }}</div><div class="small fst-italic text-secondary">{{ s.when|cell }}</div>{% else %}<div class="small text-secondary">Pending</div>{% endif %}
+  </div>{% endfor %}</div>
+</div>{% endif %}

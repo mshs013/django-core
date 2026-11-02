@@ -1,0 +1,9 @@
+<div class="list-group list-group-flush">
+{% for n in items %}<a class="list-group-item list-group-item-action {% if not n.is_read %}fw-bold{% endif %}" href="{% url 'core:notification_open' n.pk %}">
+  <div class="d-flex gap-2"><span class="status-dot status-dot-animated bg-{% if n.level == 'danger' %}red{% elif n.level == 'warning' %}yellow{% elif n.level == 'success' %}green{% else %}blue{% endif %} mt-2 {% if n.is_read %}invisible{% endif %}"></span>
+  <div class="flex-fill">{% if n.company %}<span class="badge bg-secondary-lt fw-normal me-1" title="From {{ n.company.name }}">{{ n.company.abbreviation }}</span>{% endif %}{{ n.title }}<div class="small text-secondary fw-normal">{{ n.body }}</div><div class="small text-secondary fw-normal">{{ n.created_at|timesince }} ago</div></div></div></a>
+{% empty %}<div class="p-3 text-secondary">No notifications.</div>{% endfor %}
+<div class="list-group-item d-flex justify-content-between align-items-center">
+  <a href="{% url 'core:notification_list' %}">All notifications{% if unread %} ({{ unread }} unread){% endif %}</a>
+  {% if unread %}<form method="post" action="{% url 'core:notification_list' %}">{% csrf_token %}<input type="hidden" name="action" value="mark_all"><input type="hidden" name="next" value="{{ request.META.HTTP_REFERER|default:'' }}"><button class="btn btn-sm btn-link p-0">Mark all read</button></form>{% endif %}
+</div></div>

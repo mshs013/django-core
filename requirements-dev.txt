@@ -1,0 +1,4 @@
+# Development / CI only: pip install -r requirements-dev.txt
+-r requirements.txt
+coverage==7.11.0                               # coverage run manage.py test ...
+pip-audit==2.9.0                               # dependency vulnerability scan

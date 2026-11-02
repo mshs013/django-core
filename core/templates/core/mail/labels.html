@@ -1,0 +1,20 @@
+{% extends "core/mail/base_mail.html" %}
+{% block mail %}
+<div class="card mb-3"><div class="card-header"><h3 class="card-title">Labels</h3></div>
+  <div class="card-body text-secondary small">Labels work like folders: open one on the left to see its mail. Add them to messages from the
+    mail list or a conversation, or let a <a href="{% url 'core:mail_filters' %}">filter</a> add them automatically.</div>
+  <div class="list-group list-group-flush">
+  {% for l in mail_labels %}<form method="post" class="list-group-item d-flex flex-wrap gap-2 align-items-center">{% csrf_token %}<input type="hidden" name="id" value="{{ l.pk }}">
+    <span class="badge bg-{{ l.color }} p-1"></span>
+    <input name="name" value="{{ l.name }}" maxlength="60" class="form-control form-control-sm w-auto" aria-label="Name">
+    <select name="color" class="form-select form-select-sm w-auto" aria-label="Colour">{% for value, text in colors %}<option value="{{ value }}" {% if value == l.color %}selected{% endif %}>{{ text }}</option>{% endfor %}</select>
+    <button class="btn btn-sm" name="action" value="rename">Save</button>
+    <button class="btn btn-sm btn-outline-danger ms-auto" name="action" value="delete">Delete</button></form>
+  {% empty %}<div class="list-group-item text-secondary">No labels yet.</div>{% endfor %}
+  </div>
+  <form method="post" class="card-footer d-flex flex-wrap gap-2">{% csrf_token %}<input type="hidden" name="action" value="create">
+    <input name="name" maxlength="60" class="form-control w-auto" placeholder="New label" required aria-label="New label">
+    <select name="color" class="form-select w-auto" aria-label="Colour">{% for value, text in colors %}<option value="{{ value }}">{{ text }}</option>{% endfor %}</select>
+    <button class="btn btn-primary">Add label</button></form>
+</div>
+{% endblock %}

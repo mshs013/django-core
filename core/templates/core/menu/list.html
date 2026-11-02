@@ -1,0 +1,49 @@
+{% extends "core/base.html" %}{% block title %}Menu{% endblock %}{% block heading %}Menu items{% endblock %}
+{% block actions %}{% if can_add %}<button type="button" class="btn btn-primary" hx-get="{% url 'core:menu_new' %}" hx-target="#core-modal-content" hx-swap="innerHTML"><i class="ti ti-plus me-1"></i>New item</button>{% endif %}{% endblock %}
+{% block content %}
+{% comment %}The sidebar menu as a tree: groups in bold with their item count, children indented under a branch mark; columns Title /
+Target / Permission / Superuser only / Active; hidden entries (or entries under a hidden group) dimmed. The filter box narrows the rows.{% endcomment %}
+<div class="card" x-data="{ q: '' }">
+  <div class="card-header">
+    <div>
+      <h3 class="card-title">Sidebar menu</h3>
+      <div class="card-subtitle text-secondary">{{ rows|length }} entr{{ rows|length|pluralize:"y,ies" }} · use the arrows to reorder entries within their group</div>
+    </div>
+    <div class="card-actions"><div class="input-icon">
+      <span class="input-icon-addon"><i class="ti ti-search"></i></span>
+      <input type="search" class="form-control" placeholder="Filter by title, link or permission…" x-model="q" aria-label="Filter the menu entries">
+    </div></div>
+  </div>
+  <div class="table-responsive">
+  <table class="table card-table table-vcenter core-menu-table">
+    <thead><tr><th>Title</th><th>Target</th><th>Permission</th><th>Superuser only</th><th>Active</th><th class="w-1"></th></tr></thead>
+    <tbody>
+    {% for r in rows %}{% with item=r.item %}
+    <tr class="{% if r.off %}core-menu-off{% endif %}" x-show="!q || $el.textContent.toLowerCase().includes(q.toLowerCase())">
+      <td class="core-menu-title" style="--depth: {{ r.depth }}">
+        <div class="d-flex align-items-center gap-2">
+          {% if r.depth %}<i class="ti ti-corner-down-right text-secondary core-menu-branch"></i>{% endif %}
+          <span class="avatar avatar-sm {% if r.children %}bg-primary-lt{% else %}bg-secondary-lt{% endif %}"><i class="ti ti-{{ item.icon|default:'point' }}"></i></span>
+          <div class="lh-sm">
+            <div class="{% if r.children or not r.depth %}fw-bold{% endif %}">{{ item.title }}</div>
+            {% if r.children %}<div class="small text-secondary">{{ r.children }} item{{ r.children|pluralize }}</div>{% endif %}
+          </div>
+        </div>
+      </td>
+      <td>{% if item.url_name %}<code>{{ item.url_name }}</code>{% elif item.path %}<code>{{ item.path }}</code>{% else %}<span class="text-secondary">Group{% if not r.children %} (empty){% endif %}</span>{% endif %}</td>
+      <td>{% if item.permission == "core.is_staff" %}<span class="badge bg-azure-lt" title="core.is_staff: the user's Staff flag">Staff</span>{% elif item.permission %}<code class="small">{{ item.permission }}</code>{% else %}<span class="text-secondary">—</span>{% endif %}</td>
+      <td>{% if item.superuser_only %}<span class="badge bg-red-lt">Yes</span>{% else %}<span class="badge bg-secondary-lt">No</span>{% endif %}</td>
+      <td>{% if not item.is_active %}<span class="badge bg-secondary-lt">No</span>{% else %}<span class="badge bg-green-lt">Yes</span>{% if r.off_by_parent %}<div class="small text-secondary">group hidden</div>{% endif %}{% endif %}</td>
+      <td>{% if can_change %}<div class="btn-list flex-nowrap justify-content-end">
+        <form method="post" action="{% url 'core:menu_action' item.pk 'up' %}">{% csrf_token %}<button class="btn btn-sm btn-icon" title="Move up" aria-label="Move up"{% if r.first %} disabled{% endif %}><i class="ti ti-arrow-up"></i></button></form>
+        <form method="post" action="{% url 'core:menu_action' item.pk 'down' %}">{% csrf_token %}<button class="btn btn-sm btn-icon" title="Move down" aria-label="Move down"{% if r.last %} disabled{% endif %}><i class="ti ti-arrow-down"></i></button></form>
+        <button type="button" class="btn btn-sm" hx-get="{% url 'core:menu_edit' item.pk %}" hx-target="#core-modal-content" hx-swap="innerHTML"><i class="ti ti-pencil me-1"></i>Edit</button>
+        <button type="button" class="btn btn-sm btn-outline-danger btn-icon" title="Delete" aria-label="Delete" hx-get="{% url 'core:menu_delete' item.pk %}" hx-target="#core-modal-content" hx-swap="innerHTML"><i class="ti ti-trash"></i></button>
+      </div>{% endif %}</td>
+    </tr>
+    {% endwith %}{% empty %}<tr><td colspan="6" class="text-center text-secondary py-4">No menu items. Run <code>python manage.py seed_default_menu</code> to add the defaults.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+{% endblock %}

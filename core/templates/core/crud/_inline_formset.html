@@ -1,0 +1,14 @@
+{# one Node (inline + bound formset). Expects `node`; recurses through form.nested for grandchildren. #}
+{% with fs=node.formset inline=node.inline %}
+<div class="card mb-3" data-formset>
+  <div class="card-header"><h3 class="card-title">{{ inline.label_plural|default:inline.label }}</h3></div>
+  <div class="card-body">
+    {{ fs.management_form }}
+    {% for e in fs.non_form_errors %}<div class="alert alert-danger py-2">{{ e }}</div>{% endfor %}
+    <div class="rows">
+      {% for form in fs.forms %}{% include "core/crud/_inline_row.html" with form=form prefix=form.prefix %}{% endfor %}
+    </div>
+    <button type="button" class="btn btn-sm mt-2" data-inline-add hx-get="{% url 'core:resource_inline_row' cfg.slug node.path %}?prefix={{ fs.prefix|urlencode }}"
+            hx-target="previous .rows" hx-swap="beforeend">+ Add {{ inline.label|lower }}</button>
+  </div>
+</div>{% endwith %}

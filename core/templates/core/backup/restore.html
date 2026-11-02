@@ -1,0 +1,7 @@
+{% extends "core/base.html" %}{% block title %}Restore{% endblock %}{% block heading %}Restore backup{% endblock %}
+{% block content %}<div class="card"><div class="card-body">
+<h3>Preflight checks</h3><ul>{% for label, passed, msg in checks %}<li>{{ label }}: <strong>{% if passed %}OK{% else %}FAILED{% endif %}</strong> {{ msg }}</li>{% endfor %}</ul>
+{% if ok %}<div class="alert alert-warning">Restoring replaces data. Type <code>{{ phrase }}</code> to confirm.</div>
+<form method="post">{% csrf_token %}<input name="phrase" class="form-control mb-2" autocomplete="off" required><button class="btn btn-danger">Restore</button> <a class="btn" href="{% url 'core:backup_list' %}">Cancel</a></form>
+{% else %}<div class="alert alert-danger">Restore is not available: a preflight check failed or restore is disabled (CORE_BACKUP_ALLOW_RESTORE).</div><a class="btn" href="{% url 'core:backup_list' %}">Back</a>{% endif %}
+</div></div>{% endblock %}

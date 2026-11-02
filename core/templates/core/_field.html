@@ -1,0 +1,8 @@
+{# one bound form field rendered with Tabler classes #}
+{% load core_tags %}{% with t=field|widget_type %}
+<div class="mb-3">
+  {% if t == "CheckboxInput" %}<label class="form-check">{{ field }}<span class="form-check-label">{{ field.label }}</span></label>
+  {% else %}<label class="form-label {% if field.field.required %}required{% endif %}" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% endif %}
+  {% if field.help_text %}<div class="form-hint">{{ field.help_text }}</div>{% endif %}
+  {% for e in field.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+</div>{% endwith %}

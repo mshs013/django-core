@@ -1,0 +1,9 @@
+{% load core_tags %}{% if error %}<div class="alert alert-danger mb-0">{{ error }}</div>
+{% elif ran %}
+  {% if chart %}{% include "core/reports/_chart.html" %}{% endif %}
+  <div class="table-responsive"><table class="table table-sm table-vcenter">
+    <thead><tr>{% for alias, label in columns %}<th title="{{ alias }}"{% if alias in numeric %} class="text-end"{% endif %}>{{ label }}</th>{% endfor %}</tr></thead>
+    <tbody>{% for row in rows %}<tr>{% for text, numeric in row %}<td{% if numeric %} class="text-end"{% endif %}{% if forloop.first and company_names %} title="{{ company_names|get_item:text|default:text }}"{% endif %}>{{ text }}</td>{% endfor %}</tr>
+    {% empty %}<tr><td class="text-secondary text-center" colspan="{{ columns|length }}">No rows.</td></tr>{% endfor %}</tbody></table></div>
+  <div class="d-flex mt-2">{% include "core/_pager.html" with pager_mode="post" pager_url=request.get_full_path pager_target="#query-preview" pager_include="#query-form" %}</div>
+{% else %}<div class="text-secondary">Add columns (and filters), then press <b>Run</b>.</div>{% endif %}

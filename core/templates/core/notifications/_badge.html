@@ -1,0 +1,2 @@
+{# hx-target="this": without it the poll inherits the bell link's hx-target ("next .note-menu") and fails with htmx:targetError #}
+<span id="core-note-badge" hx-get="{% url 'core:notification_badge' %}" hx-trigger="every 60s" hx-target="this" hx-swap="outerHTML">{% if core_unread %}<span class="badge bg-red text-red-fg badge-notification" aria-label="{{ core_unread }} unread">{% if core_unread > 99 %}99+{% else %}{{ core_unread }}{% endif %}</span>{% endif %}</span>

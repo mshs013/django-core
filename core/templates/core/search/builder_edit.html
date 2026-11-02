@@ -1,0 +1,55 @@
+{% extends "core/base.html" %}{% load core_tags %}
+{% block title %}{% if saved %}{{ saved.name }}{% else %}New standard search{% endif %} · {{ spec.label }}{% endblock %}
+{% block heading %}{% if saved %}{{ saved.name }}{% else %}New standard search{% endif %} <span class="text-secondary fs-4">· {{ spec.label }}</span>{% endblock %}
+{% block actions %}<a class="btn" href="{% url 'core:search_builder' %}">Search builder</a><a class="btn" href="{{ target_url }}">Open {{ spec.label }}</a>{% endblock %}
+{% block content %}
+<form method="post" class="card" x-data="searchBuilder" data-fields="{{ builder_fields|json_attr }}" data-initial="{{ state.tree|json_attr }}">
+  {% csrf_token %}
+  {% if saved %}<input type="hidden" name="id" value="{{ saved.pk }}">{% endif %}
+  <input type="hidden" name="adv" :value="items.length ? json() : ''">
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-md-6"><label class="form-label required" for="sb-name">Name</label>
+        <input id="sb-name" name="name" class="form-control" maxlength="120" required value="{{ saved.name|default:'' }}" placeholder="e.g. Ready garments this month"></div>
+      <div class="col-md-6"><label class="form-label" for="sb-q">Quick text <span class="text-secondary small">(optional)</span></label>
+        <input id="sb-q" name="q" class="form-control" maxlength="200" value="{{ state.quick }}"></div>
+    </div>
+
+    <h4 class="mt-4 mb-2">Filters</h4>
+    <div class="mb-2 small">Match <select x-model="op" class="form-select form-select-sm d-inline-block w-auto" aria-label="Combine"><option value="AND">all (AND)</option><option value="OR">any (OR)</option></select> of these conditions:</div>
+    <template x-for="(it, i) in items" :key="i">
+      <div class="row g-2 mb-2">
+        <div class="col-md-3"><select class="form-select form-select-sm" x-model="it.field" @change="changeField(it)" aria-label="Field">
+          <template x-for="f in fields" :key="f.name"><option :value="f.name" x-text="f.label" :selected="f.name===it.field"></option></template></select></div>
+        <div class="col-md-2"><select class="form-select form-select-sm" x-model="it.op" aria-label="Operator">
+          <template x-for="o in meta(it.field).operators" :key="o.value"><option :value="o.value" x-text="o.label" :selected="o.value===it.op"></option></template></select></div>
+        <div class="col-md">
+          <template x-if="it.op==='range'"><div class="input-group input-group-sm"><input class="form-control" x-model="it.value[0]" @focus="if(!Array.isArray(it.value)) it.value=['','']" aria-label="From"><input class="form-control" x-model="it.value[1]" aria-label="To"></div></template>
+          <template x-if="it.op!=='range' && it.op!=='isnull' && meta(it.field).choices.length"><select class="form-select form-select-sm" x-model="it.value" aria-label="Value">
+            <option value="">—</option><template x-for="c in meta(it.field).choices" :key="c.value"><option :value="c.value" x-text="c.label"></option></template></select></template>
+          <template x-if="it.op!=='range' && it.op!=='isnull' && !meta(it.field).choices.length"><input class="form-control form-control-sm" x-model="it.value" :type="meta(it.field).kind==='date'?'date':'text'" aria-label="Value"></template>
+        </div>
+        <div class="col-auto"><button type="button" class="btn btn-sm btn-outline-danger" @click="remove(i)" title="Remove">×</button></div>
+      </div>
+    </template>
+    <div class="text-secondary small mb-2" x-show="!items.length">No filters yet: the search returns every row the user may see.</div>
+    <button type="button" class="btn btn-sm" @click="add()"><i class="ti ti-plus me-1"></i>Filter</button>
+
+    <h4 class="mt-4 mb-2">Results</h4>
+    <div class="row g-3 align-items-end">
+      <div class="col-md-4"><label class="form-label" for="sb-sort">Sort by</label>
+        <select id="sb-sort" name="sort_field" class="form-select"><option value="">(page default)</option>
+          {% for name, label in sortable %}<option value="{{ name }}"{% if name == sort_field %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+      <div class="col-md-2"><select name="sort_dir" class="form-select" aria-label="Direction"><option value="asc">ascending</option><option value="desc"{% if sort_desc %} selected{% endif %}>descending</option></select></div>
+      <div class="col-md-3"><label class="form-label" for="sb-size">Rows per page</label>
+        <input id="sb-size" type="number" name="page_size" min="5" max="100" class="form-control" value="{{ state.page_size|default:'' }}" placeholder="(page default)"></div>
+    </div>
+    <label class="form-check mt-3"><input class="form-check-input" type="checkbox" name="is_default" value="1"{% if saved.is_default %} checked{% endif %}>
+      <span class="form-check-label">Apply by default to everyone who opens {{ spec.label }} (unless they picked a default of their own)</span></label>
+  </div>
+  <div class="card-footer d-flex gap-2">
+    <button class="btn btn-primary"><i class="ti ti-device-floppy me-1"></i>Save standard search</button>
+    <a class="btn" href="{% url 'core:search_builder' %}">Cancel</a>
+  </div>
+</form>
+{% endblock %}

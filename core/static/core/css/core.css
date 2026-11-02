@@ -1,0 +1,143 @@
+@font-face{font-family:"Noto Sans";font-weight:400;src:url("../vendor/fonts/noto-sans-latin-400-normal.woff2") format("woff2")}
+@font-face{font-family:"Noto Sans";font-weight:700;src:url("../vendor/fonts/noto-sans-latin-700-normal.woff2") format("woff2")}
+:root{--tblr-font-sans-serif:"Noto Sans",system-ui,sans-serif}
+.htmx-request{opacity:.6}.sortable-handle{cursor:grab}.inline-row.removed{display:none}
+.inline-row .core-inline-col{min-width:10rem}.inline-row textarea{min-height:4.5rem;height:4.5rem;resize:vertical}
+/* tabbed forms (xl modal): keep the dialog at the top so the tab bar does not jump when a tab is shorter or taller */
+.modal-dialog-centered.modal-xl{align-items:flex-start}
+.search-bar .form-control{min-width:16rem}
+/* Menu builder tree table: children indented per level; hidden entries dimmed */
+.core-menu-table .core-menu-title>div{margin-left:calc(var(--depth, 0) * 1.75rem)}
+.core-menu-table .core-menu-branch{margin-left:-1.6rem;width:1.1rem;font-size:1rem}
+.core-menu-table tr.core-menu-off .core-menu-title,.core-menu-table tr.core-menu-off code{opacity:.55}
+
+/* Desktop header: full width above the sidebar (fold button, company logo + name, user menu); fixed, the sidebar and the
+   content area start below it. Phones keep Tabler's sidebar navbar (logo + hamburger) instead. */
+:root{--core-header-h:3.75rem}
+.core-topbar{background:var(--tblr-bg-surface);height:var(--core-header-h);position:fixed;top:0;left:0;right:0;z-index:1030}
+.core-topbar .nav-item{position:relative}
+
+/* Modal forms: the <form> sits between .modal-content and .modal-body, which breaks Bootstrap's scrollable-dialog flex chain.
+   Make the form a flex column so only the body scrolls and the header / footer stay visible. */
+#core-modal-content > form { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; max-height: 100%; }
+#core-modal-content > form > .modal-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+#core-modal .modal-dialog-scrollable { max-height: calc(100% - 3.5rem); }
+/* approval status + buttons in a detail modal header: right-aligned, clear of the absolutely positioned close button */
+.core-modal-approval{margin-right:2.25rem}
+
+/* Pager: "Showing 1 to 20 of 65 entries" + joined First « 1 2 3 … » Last buttons */
+.core-pager .pagination{gap:0}
+.core-pager .page-link{margin:0 0 0 -1px;border:1px solid var(--tblr-border-color);border-radius:0;min-width:2.25rem;text-align:center;
+  font-size:.8125rem;color:var(--tblr-secondary);background:var(--tblr-bg-surface)}
+.core-pager .page-item:first-child .page-link{margin-left:0;border-radius:var(--tblr-border-radius) 0 0 var(--tblr-border-radius)}
+.core-pager .page-item:last-child .page-link{border-radius:0 var(--tblr-border-radius) var(--tblr-border-radius) 0}
+.core-pager .page-item.active .page-link{position:relative;z-index:1;background:var(--tblr-primary);border-color:var(--tblr-primary);color:#fff}
+.core-pager .page-item.disabled .page-link{opacity:.6}
+.core-pager .page-link:hover{background:var(--tblr-bg-surface-secondary)}
+
+/* Brand: the active company's logo + name in the header (phones: logo in the sidebar navbar) */
+.core-brand{white-space:normal;padding:.25rem 0;min-width:0}
+.core-brand a{min-width:0}
+.core-company-logo{flex:0 0 auto}
+.core-company-logo img{height:2.5rem;width:auto;max-width:12rem;object-fit:contain;display:block}
+.core-company-name{font-weight:600;font-size:1rem;line-height:1.2;min-width:0}
+.core-company-switch .dropdown-item.active .text-secondary{color:inherit!important}
+/* Sidebar folded to its icons (html[data-bs-sidebar="folded"], toggled from the header): fly-out menu groups; the logo stays in the header */
+.core-sidebar-toggle .core-unfold-icon,html[data-bs-sidebar=folded] .core-sidebar-toggle .core-fold-icon{display:none}
+html[data-bs-sidebar=folded] .core-sidebar-toggle .core-unfold-icon{display:inline-block}
+@media (min-width:992px){
+  html[data-bs-sidebar=folded] .navbar-vertical .nav-link{justify-content:center}
+  html[data-bs-sidebar=folded] .navbar-vertical .nav-link-icon{margin:0}
+  html[data-bs-sidebar=folded] .navbar-vertical .dropdown-menu .dropdown-item{white-space:nowrap}
+}
+@media (max-width:991.98px){html[data-bs-sidebar^=folded] .navbar-vertical .dropdown-menu.show{display:block}}
+
+/* Report builders: options panel on the left (collapsible), results + chart on the right */
+.rb-scroll{max-height:22rem;overflow:auto}
+.rb-panel .accordion-button{padding:.65rem 1rem;font-weight:600;font-size:.875rem}
+.rb-panel .accordion-header{font-size:.875rem;margin:0}
+/* Query builder: results in the middle, editor in a right sidebar (section pane + icon rail). The sidebar sticks while the
+   results scroll; on narrow screens it sits above the results with the rail as a row. */
+.qb-layout{display:flex;gap:1rem;align-items:flex-start}
+.qb-main{flex:1 1 auto;min-width:0}
+.qb-side{flex:0 0 auto;flex-direction:row;position:sticky;top:1rem;margin-bottom:0;max-width:100%}
+.qb-pane{width:26rem;display:flex;flex-direction:column;min-width:0;border-right:1px solid var(--tblr-border-color)}
+.qb-pane-head{display:flex;align-items:center;gap:.5rem;padding:.5rem .75rem;border-bottom:1px solid var(--tblr-border-color);font-size:.875rem}
+.qb-pane-body{padding:.6rem .75rem;overflow:auto;max-height:calc(100vh - 13rem)}
+.qb-rail{display:flex;flex-direction:column;gap:.15rem;padding:.35rem;width:4.25rem;flex:0 0 auto}
+.qb-rail-btn{position:relative;display:flex;flex-direction:column;align-items:center;gap:.1rem;padding:.45rem .2rem;border:0;border-radius:var(--tblr-border-radius);
+  background:transparent;color:var(--tblr-secondary);font-size:.7rem;line-height:1.1}
+.qb-rail-btn .ti{font-size:1.25rem}
+.qb-rail-btn:hover{background:var(--tblr-bg-surface-secondary);color:var(--tblr-body-color)}
+.qb-rail-btn.active{background:var(--tblr-primary);color:#fff}
+.qb-rail-btn .badge{position:absolute;top:.15rem;right:.15rem;padding:.1rem .3rem;font-size:.6rem;background:var(--tblr-primary);color:#fff}
+.qb-rail-btn.active .badge{background:#fff;color:var(--tblr-primary)}
+.qb-rail-btn .qb-dot{top:.35rem;right:.6rem}
+.qb-rail-end{margin-top:.5rem;border-top:1px solid var(--tblr-border-color);border-radius:0}
+@media (max-width:991.98px){
+  .qb-layout{flex-direction:column;align-items:stretch}
+  .qb-side{order:-1;position:static;flex-direction:column-reverse;width:100%}
+  .qb-pane{width:auto;border-right:0;border-top:1px solid var(--tblr-border-color)}
+  .qb-pane-body{max-height:60vh}
+  .qb-rail{flex-direction:row;width:auto;overflow-x:auto}
+  .qb-rail-btn{flex:1 0 3.5rem}
+  .qb-rail-end{margin:0 0 0 .5rem;border-top:0;border-left:1px solid var(--tblr-border-color)}
+}
+.qb-item{padding:.4rem .35rem;border-bottom:1px solid var(--tblr-border-color)}
+.qb-item:hover{background:var(--tblr-bg-surface-secondary)}
+.qb-sub{padding-left:.25rem}
+.qb-agg{flex:0 0 7.75rem;width:7.75rem}
+.qb-name{flex:0 0 6rem;width:6rem}
+.qb-detail{margin:.35rem 0 0 .25rem;padding:.4rem .5rem;border-left:2px solid var(--tblr-border-color);background:var(--tblr-bg-surface-secondary);border-radius:0 var(--tblr-border-radius) var(--tblr-border-radius) 0}
+.qb-group{margin:.4rem 0;padding:.3rem .5rem;border:1px dashed var(--tblr-border-color);border-radius:var(--tblr-border-radius)}
+.qb-arg{width:5.5rem;flex:0 0 auto}
+.qb-field{flex:1 1 100%;min-width:0}
+.qb-value>*{flex:1 1 auto}
+.qb-leaf select[multiple]{min-width:9rem}
+.qb-dot{position:absolute;top:.15rem;right:.1rem;width:.4rem;height:.4rem;border-radius:50%;background:var(--tblr-primary)}
+.core-chart{position:relative;width:100%}
+/* audit: "New:" / "Old:" lists of every field (disc, then circle bullets); changed fields highlighted */
+.audit-changes{list-style:disc}
+.audit-changes>li+li{margin-top:.35rem}
+.audit-changes-list{list-style:circle;padding-left:1.25rem;margin:.15rem 0 0}
+.audit-changes-list li{padding:.05rem 0}
+.audit-changes-list li.audit-changed mark{color:var(--tblr-warning);background:color-mix(in oklab,var(--tblr-warning) 16%,var(--tblr-bg-surface));border:var(--tblr-border-width) solid color-mix(in oklab,var(--tblr-warning) 20%,var(--tblr-bg-surface));border-radius:var(--tblr-border-radius);font-weight:600;padding:.05rem .4rem}   /* same colours as Tabler's .alert-warning */
+/* many-to-many checkbox lists (core.crud.widgets) */
+.core-checklist{background:var(--tblr-bg-forms)}
+.core-checklist-body{max-height:16rem;overflow:auto}
+.core-check-cols{columns:2 14rem;column-gap:1.5rem}
+.core-check-cols .form-check{break-inside:avoid}
+/* tabbed forms */
+.core-form-tabs .nav-link{position:relative}
+.core-tab-error{display:inline-block;width:.45rem;height:.45rem;border-radius:50%;background:var(--tblr-danger);margin-left:.35rem;vertical-align:middle}
+[x-cloak]{display:none!important}
+
+/* image thumbnails in list cells */
+.core-thumb { width: auto; height: auto; max-height: 60px; max-width: 120px; object-fit: contain; border-radius: 4px; border: 1px solid var(--tblr-border-color); }
+.core-file-preview { max-width: 8rem; max-height: 5rem; object-fit: contain; border-radius: 4px; border: 1px solid var(--tblr-border-color); display: block; margin-bottom: .25rem; }
+
+/* sticky top bar (above) and footer: the page body scrolls between them */
+.page-wrapper{display:flex;flex-direction:column;min-height:100vh}
+.page-wrapper>.page-body{flex:1 0 auto}
+.core-footer{position:sticky;bottom:0;z-index:1019;background:var(--tblr-bg-surface)}
+/* desktop: header fixed on top, sidebar below it, and the content column (page-wrapper) is the only scroll container, so the
+   footer stays at the bottom of the content area */
+@media screen and (min-width:992px){
+  .page{padding-top:var(--core-header-h)}
+  .navbar-vertical.navbar-expand-lg{top:var(--core-header-h)}
+  .page-wrapper{height:calc(100vh - var(--core-header-h));max-height:calc(100vh - var(--core-header-h));min-height:0;overflow-y:auto}
+  .core-footer{flex:0 0 auto}
+}
+@media print{.page{padding-top:0}}
+
+/* Nested sidebar menus (3+ levels): collapsible sub-menus inline below their toggle, indented per level; caret turns when open */
+.core-submenu>.collapse,.core-submenu>.collapsing{padding-left:.75rem}
+/* long titles wrap instead of running off the screen (the folded fly-out keeps nowrap: its rule is more specific) */
+.navbar-vertical .dropdown-menu .dropdown-item{white-space:normal;overflow-wrap:anywhere}
+.core-submenu>.dropdown-toggle::after{margin-left:auto;transition:transform .2s}
+.core-submenu>.dropdown-toggle.collapsed::after{transform:rotate(-135deg)}
+
+/* Approval signature row under a record (crud/_signatures.html) */
+.core-signature-img { height: 3.25rem; display: flex; align-items: center; justify-content: center; margin: .25rem 0; }
+.core-signature-img img { max-height: 3.25rem; max-width: 9rem; object-fit: contain; }
+[data-bs-theme="dark"] .core-signature-img img { background: #fff; border-radius: 4px; padding: 2px; }

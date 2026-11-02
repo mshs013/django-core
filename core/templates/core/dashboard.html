@@ -1,0 +1,6 @@
+{% extends "core/base.html" %}{% block title %}Dashboard{% endblock %}{% block heading %}Dashboard{% endblock %}
+{% block content %}<div class="row row-cards">
+  <div class="col-sm-4"><a class="card card-link" href="{% url 'core:approval_queue' %}"><div class="card-body"><div class="subheader">Awaiting your approval</div><div class="h1 mb-0">{{ pending }}</div></div></a></div>
+  <div class="col-sm-4"><a class="card card-link" href="{% url 'core:approval_mine' %}"><div class="card-body"><div class="subheader">My open requests</div><div class="h1 mb-0">{{ my_open }}</div></div></a></div>
+  <div class="col-sm-4"><a class="card card-link" href="{% url 'core:notification_list' %}"><div class="card-body"><div class="subheader">Unread notifications</div><div class="h1 mb-0">{{ unread }}</div></div></a></div>
+</div>{% endblock %}

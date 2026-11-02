@@ -1,0 +1,3 @@
+# Optional: MySQL 8 / MariaDB 10.6+ driver (DB_ENGINE=mysql). Install: pip install -r requirements-mysql.txt
+# Ubuntu needs the client headers first: sudo apt install pkg-config default-libmysqlclient-dev build-essential
+mysqlclient==2.3.0

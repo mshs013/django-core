@@ -1,0 +1,8 @@
+{% extends "core/base.html" %}
+{% block title %}Delete {{ obj }}{% endblock %}
+{% block heading %}Delete {{ obj }}?{% endblock %}
+{% block content %}
+<form method="post" class="card"><div class="card-body">{% csrf_token %}
+  <p>{% if soft %}This moves the record to the trash; it can be restored later.{% else %}This permanently removes the record and cannot be undone.{% endif %}</p>
+  <button class="btn btn-danger">Delete</button> <a class="btn" href="{% url 'core:resource_detail' cfg.slug obj.pk %}">Cancel</a></div></form>
+{% endblock %}
